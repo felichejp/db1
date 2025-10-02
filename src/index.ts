@@ -4,7 +4,7 @@
  */
 
 // Clase principal que representa el saludo
-class Saludo {
+class ClaseSaludo {
     private mensaje: string;
     private autor: string;
 
@@ -24,8 +24,8 @@ class Saludo {
     }
 
     // Método para establecer un nuevo mensaje
-    public setMensaje(nuevoMensaje: string): void {
-        this.mensaje = nuevoMensaje;
+    public setMensaje(mensaje: string): void {
+        this.mensaje = mensaje;
     }
 
     // Método para mostrar el saludo completo
@@ -46,11 +46,11 @@ class Saludo {
 }
 
 // Clase principal de la aplicación
-class App {
-    private saludo: Saludo;
+class ClaseApp {
+    private saludo: ClaseSaludo;
 
     constructor() {
-        this.saludo = new Saludo();
+        this.saludo = new ClaseSaludo();
     }
 
     // Método principal para ejecutar la aplicación
@@ -67,10 +67,10 @@ class App {
 }
 
 // Punto de entrada del programa
-function main(): void {
-    const app = new App();
-    app.ejecutar();
+function db(): void {
+    const objetoTipoApp = new ClaseApp();
+    objetoTipoApp.ejecutar();
 }
 
 // Ejecutar la aplicación
-main();
+db();

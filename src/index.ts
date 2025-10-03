@@ -1,6 +1,6 @@
 import { InitRegister } from "./struct";
 
-class InitRegister {
+class InitRegisterClass {
     private initRegister: InitRegister;
 
     constructor(initRegister: InitRegister) {
@@ -19,5 +19,5 @@ const testRegister = {
     email: "john.doe@example.com",
     movilNumber: "1234567890",
 }
-const register1 = new InitRegister(testRegister);
+const register1 = new InitRegisterClass(testRegister);
 register1.printInitRegister();

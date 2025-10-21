@@ -2,9 +2,9 @@
 
 export interface InitRegister {
     institutionName: string;
-    dependenies: string;
+    dependencies: string;
     responseName: string;
     responsePassword: string;
     email: string;
-    movilNumber: string;
+    mobileNumber: string;
 }

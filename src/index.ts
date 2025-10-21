@@ -13,11 +13,11 @@ class InitRegisterClass {
 }
 const testRegister = {
     institutionName: "Universidad de los Andes",
-    dependenies: "Facultad de Ciencias",
+    dependencies: "Facultad de Ciencias",
     responseName: "John Doe",
     responsePassword: "123456",
     email: "john.doe@example.com",
-    movilNumber: "1234567890",
+    mobileNumber: "1234567890",
 }
 const register1 = new InitRegisterClass(testRegister);
 register1.printInitRegister();

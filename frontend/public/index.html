@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asesoría Estudiantil</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Menú lateral -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-graduation-cap"></i> Asesoría</h2>
+            <button class="close-btn" id="closeBtn">&times;</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="menu-item active" data-page="home"><i class="fas fa-home"></i> Inicio</a></li>
+            <li><a href="#" class="menu-item" data-page="auth"><i class="fas fa-user-plus"></i> Registro</a></li>
+            <li><a href="#" class="menu-item" data-page="about"><i class="fas fa-info-circle"></i> Acerca de</a></li>
+        </ul>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+        <!-- Botón para abrir menú -->
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Página de Inicio -->
+        <div class="page active" id="home-page">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1>Asesoría Estudiantil</h1>
+                    <p class="hero-subtitle">Conecta con estudiantes que pueden ayudarte a alcanzar tus metas académicas</p>
+                    <button class="cta-button" data-page="auth">
+                        <i class="fas fa-rocket"></i>
+                        Comenzar Ahora
+                    </button>
+                </div>
+                <div class="hero-image">
+                    <i class="fas fa-users fa-10x"></i>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2>¿Por qué elegir nuestra plataforma?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-book-open fa-3x"></i>
+                        <h3>Asesoría por Materia</h3>
+                        <p>Encuentra asesores especializados en cada materia que necesites</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-user-graduate fa-3x"></i>
+                        <h3>Estudiantes Calificados</h3>
+                        <p>Asesores seleccionados por su excelencia académica y experiencia</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-chalkboard-teacher fa-3x"></i>
+                        <h3>Supervisión Profesional</h3>
+                        <p>Cada grupo cuenta con un profesor responsable</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-mobile-alt fa-3x"></i>
+                        <h3>Acceso Fácil</h3>
+                        <p>Registro rápido y seguro con verificación por WhatsApp</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <h2>¿Listo para comenzar?</h2>
+                <p>Únete a nuestra comunidad de estudiantes y mejora tu rendimiento académico</p>
+                <button class="cta-button large" data-page="auth">
+                    <i class="fas fa-user-plus"></i>
+                    Registrarse Ahora
+                </button>
+            </div>
+        </div>
+
+        <!-- Página de Autenticación/Registro -->
+        <div class="page" id="auth-page">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h2><i class="fas fa-user-plus"></i> Registro de Lead</h2>
+                    <p>Completa tus datos para comenzar</p>
+                </div>
+
+                <form class="auth-form" id="authForm">
+                    <div class="form-group">
+                        <label for="name">
+                            <i class="fas fa-user"></i>
+                            Nombre del contacto
+                        </label>
+                        <input type="text" id="name" name="name" required>
+                        <span class="error-message" id="nameError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="institution">
+                            <i class="fas fa-university"></i>
+                            Nombre de la institución
+                        </label>
+                        <input type="text" id="institution" name="institution" required>
+                        <span class="error-message" id="institutionError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactPhone">
+                            <i class="fas fa-phone"></i>
+                            Teléfono de contacto
+                        </label>
+                        <input type="tel" id="contactPhone" name="contactPhone" required>
+                        <span class="error-message" id="contactPhoneError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="whatsappPhone">
+                            <i class="fab fa-whatsapp"></i>
+                            Teléfono móvil con WhatsApp
+                        </label>
+                        <input type="tel" id="whatsappPhone" name="whatsappPhone" required>
+                        <span class="error-message" id="whatsappPhoneError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i>
+                            Contraseña
+                        </label>
+                        <input type="password" id="password" name="password" required>
+                        <div class="password-requirements">
+                            <small>Debe contener letras, números y caracteres especiales (mínimo 8 caracteres)</small>
+                        </div>
+                        <span class="error-message" id="passwordError"></span>
+                    </div>
+
+                    <div class="form-group" id="codeGroup" style="display: none;">
+                        <label for="verificationCode">
+                            <i class="fas fa-key"></i>
+                            Código de verificación (5 dígitos)
+                        </label>
+                        <input type="text" id="verificationCode" name="verificationCode" maxlength="5" pattern="[0-9]{5}">
+                        <span class="error-message" id="codeError"></span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary" id="sendCodeBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            Enviar Código
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="verifyCodeBtn" style="display: none;">
+                            <i class="fas fa-check"></i>
+                            Verificar Código
+                        </button>
+                        <button type="button" class="btn btn-outline" id="resendCodeBtn" style="display: none;" disabled>
+                            <i class="fas fa-redo"></i>
+                            Reenviar Código (<span id="countdown">60</span>s)
+                        </button>
+                    </div>
+
+                    <div class="form-status" id="formStatus"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Página Acerca de -->
+        <div class="page" id="about-page">
+            <div class="about-container">
+                <h2>Acerca de Asesoría Estudiantil</h2>
+                <div class="about-content">
+                    <p>Somos una plataforma que conecta estudiantes que necesitan ayuda académica con otros estudiantes que pueden brindar esa ayuda de manera efectiva.</p>
+                    
+                    <h3>Nuestra Misión</h3>
+                    <p>Facilitar el aprendizaje colaborativo entre estudiantes, creando una comunidad educativa donde todos pueden crecer académicamente.</p>
+                    
+                    <h3>Características Principales</h3>
+                    <ul>
+                        <li>Asesoría organizada por materias específicas</li>
+                        <li>Estudiantes asesores calificados y evaluados</li>
+                        <li>Supervisión profesional de profesores</li>
+                        <li>Sistema de registro seguro con verificación por WhatsApp</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

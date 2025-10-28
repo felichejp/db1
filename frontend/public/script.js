@@ -112,7 +112,7 @@ function validatePassword() {
     const isLongEnough = password.length >= 8;
     
     if (password && (!hasLetter || !hasNumber || !hasSpecial || !isLongEnough)) {
-        errorElement.textContent = 'La contraseña debe contener letras, números, caracteres especiales y tener al menos 8 caracteres';
+        errorElement.textContent = 'Error en la contraseña';
         errorElement.classList.add('show');
         return false;
     } else {

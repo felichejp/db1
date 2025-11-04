@@ -42,6 +42,24 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+app.post('/api/verify-code', async (req: Request, res: Response) => {
+  try {
+    const { idLead, codeEscritoPorElUsuario } = req.body;
+    // consultar el codigo en la base de datos
+    // en la tabla codeLead
+    // comparar con el còdigo escrito por el usuario
+    // con el codigo en la base de datos
+    // regresar true o false
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 app.post('/api/send-code', async (req: Request, res: Response) => {
   try {
     const { name, institution, contactPhone, phone, password } = req.body as Lead;

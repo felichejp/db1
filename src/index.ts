@@ -1,5 +1,5 @@
-import { InitRegister } from "./struct";
-import { Database } from "./database";
+import { InitRegister } from "../backend/src/struct";
+import { Database } from "../backend/database";
 import * as dotenv from 'dotenv';
     dotenv.config();
 class InitRegisterClass {

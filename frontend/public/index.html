@@ -94,7 +94,7 @@
                             <i class="fas fa-user"></i>
                             Nombre del contacto
                         </label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez García" required>
                         <span class="error-message" id="nameError"></span>
                     </div>
 
@@ -103,7 +103,7 @@
                             <i class="fas fa-university"></i>
                             Nombre de la institución
                         </label>
-                        <input type="text" id="institution" name="institution" required>
+                        <input type="text" id="institution" name="institution" placeholder="Ej: Universidad Nacional" required>
                         <span class="error-message" id="institutionError"></span>
                     </div>
 
@@ -112,7 +112,7 @@
                             <i class="fas fa-phone"></i>
                             Teléfono de contacto
                         </label>
-                        <input type="tel" id="contactPhone" name="contactPhone" required>
+                        <input type="tel" id="contactPhone" name="contactPhone" placeholder="Ej: +52 123 456 7890" required>
                         <span class="error-message" id="contactPhoneError"></span>
                     </div>
 
@@ -121,7 +121,7 @@
                             <i class="fab fa-whatsapp"></i>
                             Teléfono móvil con WhatsApp
                         </label>
-                        <input type="tel" id="whatsappPhone" name="whatsappPhone" required>
+                        <input type="tel" id="whatsappPhone" name="whatsappPhone" placeholder="Ej: +52 123 456 7890" required>
                         <span class="error-message" id="whatsappPhoneError"></span>
                     </div>
 
@@ -130,7 +130,12 @@
                             <i class="fas fa-lock"></i> 
                             Contraseña
                         </label>
-                        <input type="password" id="password" name="password" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres con letras, números y especiales" required>
+                            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Mostrar contraseña">
+                                <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
                         <div class="password-requirements">
                             <small>Debe contener letras, números y caracteres especiales (mínimo 8 caracteres)</small>
                         </div>
@@ -142,7 +147,7 @@
                             <i class="fas fa-key"></i>
                             Código de verificación (5 dígitos)
                         </label>
-                        <input type="text" id="verificationCode" name="verificationCode" maxlength="5" pattern="[0-9]{5}">
+                        <input type="text" id="verificationCode" name="verificationCode" maxlength="5" pattern="[0-9]{5}" placeholder="12345">
                         <span class="error-message" id="codeError"></span>
                     </div>
 

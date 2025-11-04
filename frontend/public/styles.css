@@ -290,6 +290,13 @@ body {
     color: #4fc3f7;
 }
 
+/* Contenedor para input de contraseña con botón de mostrar/ocultar */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .form-group input {
     padding: 12px 15px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -298,6 +305,12 @@ body {
     color: #e0e0e0;
     font-size: 1rem;
     transition: all 0.3s ease;
+    width: 100%;
+}
+
+/* Input de contraseña con padding extra para el botón */
+#password {
+    padding-right: 45px;
 }
 
 .form-group input:focus {
@@ -309,6 +322,36 @@ body {
 
 .form-group input::placeholder {
     color: #888;
+}
+
+/* Botón para mostrar/ocultar contraseña */
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    color: #4fc3f7;
+    transform: scale(1.1);
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: #4fc3f7;
+}
+
+.password-toggle i {
+    font-size: 1rem;
 }
 
 .password-requirements {

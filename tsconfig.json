@@ -10,6 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "backend/database.ts", "backend/src/struct.ts"],
   "exclude": ["node_modules", "dist"]
 }

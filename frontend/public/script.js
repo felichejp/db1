@@ -16,10 +16,69 @@ const resendCodeBtn = document.getElementById('resendCodeBtn');
 const codeGroup = document.getElementById('codeGroup');
 const countdownSpan = document.getElementById('countdown');
 const formStatus = document.getElementById('formStatus');
+const passwordToggle = document.getElementById('passwordToggle');
+const passwordToggleIcon = document.getElementById('passwordToggleIcon');
+const passwordInput = document.getElementById('password');
 
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+
+// Detectar si estamos en modo desarrollo
+function isDevelopmentMode() {
+    const hostname = window.location.hostname;
+    // Detectar localhost, 127.0.0.1, o dominios locales
+    return hostname === 'localhost' || 
+           hostname === '127.0.0.1' || 
+           hostname === '0.0.0.0' ||
+           hostname.startsWith('192.168.') ||
+           hostname.startsWith('10.0.') ||
+           hostname.includes('.local');
+}
+
+// Valores predeterminados para desarrollo/testing
+const DEFAULT_FORM_VALUES = {
+    name: 'Juan Pérez García',
+    institution: 'Universidad Nacional',
+    contactPhone: '+52 123 456 7890',
+    whatsappPhone: '+52 123 456 7890',
+    password: 'Test123!',
+    verificationCode: '12345'
+};
+
+// Prellenar formulario solo en modo desarrollo
+function fillDefaultValuesIfDevelopment() {
+    if (!isDevelopmentMode()) {
+        return; // No hacer nada en producción
+    }
+
+    // Solo prellenar si los campos están vacíos
+    const nameInput = document.getElementById('name');
+    const institutionInput = document.getElementById('institution');
+    const contactPhoneInput = document.getElementById('contactPhone');
+    const whatsappPhoneInput = document.getElementById('whatsappPhone');
+    const passwordInput = document.getElementById('password');
+    const verificationCodeInput = document.getElementById('verificationCode');
+
+    if (nameInput && !nameInput.value) {
+        nameInput.value = DEFAULT_FORM_VALUES.name;
+    }
+    if (institutionInput && !institutionInput.value) {
+        institutionInput.value = DEFAULT_FORM_VALUES.institution;
+    }
+    if (contactPhoneInput && !contactPhoneInput.value) {
+        contactPhoneInput.value = DEFAULT_FORM_VALUES.contactPhone;
+    }
+    if (whatsappPhoneInput && !whatsappPhoneInput.value) {
+        whatsappPhoneInput.value = DEFAULT_FORM_VALUES.whatsappPhone;
+    }
+    if (passwordInput && !passwordInput.value) {
+        passwordInput.value = DEFAULT_FORM_VALUES.password;
+    }
+    if (verificationCodeInput && !verificationCodeInput.value) {
+        verificationCodeInput.value = DEFAULT_FORM_VALUES.verificationCode;
+    }
+}
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,6 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     setupEventListeners();
     showPage('home');
+    // Prellenar valores solo en desarrollo
+    fillDefaultValuesIfDevelopment();
 }
 
 function setupEventListeners() {
@@ -58,6 +119,11 @@ function setupEventListeners() {
     verifyCodeBtn.addEventListener('click', verifyCode);
     resendCodeBtn.addEventListener('click', resendCode);
     
+    // Toggle mostrar/ocultar contraseña
+    if (passwordToggle) {
+        passwordToggle.addEventListener('click', togglePasswordVisibility);
+    }
+    
     // Validación en tiempo real
     setupFormValidation();
 }
@@ -82,6 +148,14 @@ function showPage(pageId) {
             item.classList.add('active');
         }
     });
+
+    // Si se muestra la página de auth, prellenar valores en desarrollo
+    if (pageId === 'auth') {
+        // Pequeño delay para asegurar que los elementos estén visibles
+        setTimeout(() => {
+            fillDefaultValuesIfDevelopment();
+        }, 100);
+    }
 }
 
 // Menú lateral
@@ -91,6 +165,21 @@ function toggleSidebar() {
 
 function closeSidebar() {
     sidebar.classList.remove('active');
+}
+
+// Toggle mostrar/ocultar contraseña
+function togglePasswordVisibility() {
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordToggleIcon.classList.remove('fa-eye');
+        passwordToggleIcon.classList.add('fa-eye-slash');
+        passwordToggle.setAttribute('aria-label', 'Ocultar contraseña');
+    } else {
+        passwordInput.type = 'password';
+        passwordToggleIcon.classList.remove('fa-eye-slash');
+        passwordToggleIcon.classList.add('fa-eye');
+        passwordToggle.setAttribute('aria-label', 'Mostrar contraseña');
+    }
 }
 
 // Validación de formulario
@@ -297,6 +386,14 @@ function showCodeVerification() {
     codeGroup.style.display = 'block';
     verifyCodeBtn.style.display = 'inline-block';
     resendCodeBtn.style.display = 'inline-block';
+    
+    // Prellenar código de verificación en desarrollo
+    if (isDevelopmentMode()) {
+        const verificationCodeInput = document.getElementById('verificationCode');
+        if (verificationCodeInput && !verificationCodeInput.value) {
+            verificationCodeInput.value = DEFAULT_FORM_VALUES.verificationCode;
+        }
+    }
 }
 
 function startCountdown() {

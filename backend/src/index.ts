@@ -45,11 +45,46 @@ app.get('/health', (req: Request, res: Response) => {
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
-    // consultar el codigo en la base de datos
-    // en la tabla codeLead
-    // comparar con el còdigo escrito por el usuario
-    // con el codigo en la base de datos
-    // regresar true o false
+
+    // Validar campos requeridos
+    if (!idLead || !codeEscritoPorElUsuario) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required fields: idLead and codeEscritoPorElUsuario',
+      });
+    }
+
+    // Consultar el código en la base de datos en la tabla codeLead
+    const selectCodeQuery = `
+      SELECT code
+      FROM "codeLead"
+      WHERE "idLead" = $1
+      ORDER BY id DESC
+      LIMIT 1;
+    `;
+    const result = await database.query(selectCodeQuery, [idLead]);
+
+    // Verificar si se encontró el código
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Code not found for this lead',
+        verified: false,
+      });
+    }
+
+    // Obtener el código de la base de datos
+    const codeFromDatabase = result.rows[0].code;
+
+    // Comparar el código escrito por el usuario con el código en la base de datos
+    const isVerified = codeFromDatabase === codeEscritoPorElUsuario;
+
+    // Regresar true o false
+    res.status(200).json({
+      status: 'ok',
+      verified: isVerified,
+      message: isVerified ? 'Code verified successfully' : 'Code verification failed',
+    });
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

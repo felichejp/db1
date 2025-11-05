@@ -1,5 +1,6 @@
 import { InitRegister } from "../backend/src/struct";
-import { Database } from "../backend/database";
+import { Database } from "../backend/src/database";
+import { QueryResult } from "pg";
 import * as dotenv from 'dotenv';
     dotenv.config();
 class InitRegisterClass {
@@ -35,29 +36,29 @@ database.connect()
     .then(() => {
         console.log('Database connected successfully');
         database.query('SELECT * FROM "testtable"')
-            .then((result) => {
+            .then((result: QueryResult) => {
                 console.log(result.rows);
-                database.query('INSERT INTO "testtable" (id, name, age) VALUES (3, \'Liz\', 24)')
-                    .then((result) => {
+                database.query('INSERT INTO "testtable" (id, name, age) VALUES (69, \'Juan Manuel\', 21)')
+                    .then((result: QueryResult) => {
                         console.log(result.rows);
                         database.disconnect()
                             .then(() => {
                                 console.log('Database disconnected successfully');
                             })
-                            .catch((error) => {
+                            .catch((error: Error) => {
                                 console.error('Failed to disconnect from database:', error);
                             });
                     })
-                    .catch((error) => {
+                    .catch((error: Error) => {
                         console.error('Failed to insert into database:', error);
                     });
                 
             })
-            .catch((error) => {
+            .catch((error: Error) => {
                 console.error('Failed to query database:', error);
             });
         
     })
-    .catch((error) => {
+    .catch((error: Error) => {
         console.error('Failed to connect to database:', error);
     });

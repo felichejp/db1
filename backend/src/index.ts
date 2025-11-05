@@ -50,6 +50,54 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
     // comparar con el còdigo escrito por el usuario
     // con el codigo en la base de datos
     // regresar true o false
+    if(!idLead || !codeEscritoPorElUsuario){
+      return res.status(400).json({
+        status: 'error',
+        message: 'No se encuentran los campos requeridos',
+      });
+    }
+
+    if(typeof codeEscritoPorElUsuario !== 'string' || codeEscritoPorElUsuario.length !== 5){
+      return res.status(400).json({
+        status: 'error',
+        message: 'El código no cumple con el formato. Debe ser de 5 dígitos',
+      });
+    }
+
+    const queryCodeLead = `
+    SELECT code
+    FROM "codeLead"
+    WHERE "idLead" = $1
+    `
+    
+    const result = await database.query(queryCodeLead, [idLead]);
+
+    if(result.rows.length === 0){
+      return res.status(404).json({
+        status: 'error',
+        message: 'No hay codigo de lead en la base de datos',
+        verified: false,
+      });
+    }
+
+    const codeFromDatabase = result.rows[0].code;
+    const codeFromUser = codeEscritoPorElUsuario;
+    const isVerified = codeFromDatabase === codeFromUser;
+
+    if(isVerified){
+      return res.status(200).json({
+        status: 'ok',
+        message: 'Codigo verificado correctamente',
+        verified: true,
+      });
+    } else {
+      return res.status(200).json({
+        status: 'error',
+        message: 'Codigo incorrecto',
+        verified: false,
+      });
+    }
+
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

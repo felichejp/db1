@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let currentLeadId = null;
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -311,12 +312,14 @@ async function sendVerificationCode() {
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result.status === 'ok') {
+            // Guardar el leadId para usarlo en la verificación
+            currentLeadId = result.leadId;
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
         } else {
-            showFormStatus('error', result.error || 'Error al enviar el código');
+            showFormStatus('error', result.message || result.error || 'Error al enviar el código');
         }
     } catch (error) {
         console.error('Error:', error);
@@ -338,6 +341,11 @@ async function verifyCode() {
         return;
     }
     
+    if (!currentLeadId) {
+        showFormStatus('error', 'Error: No se encontró el ID del lead. Por favor, envía el código nuevamente.');
+        return;
+    }
+    
     try {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
@@ -348,25 +356,36 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: currentLeadId,
                 codeEscritoPorElUsuario: code,
             })
         });
         
-        const result = await response.json();
+        // Verificar si la respuesta es JSON válido
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonError) {
+            console.error('Error parsing JSON:', jsonError);
+            showFormStatus('error', 'Error al procesar la respuesta del servidor. Intenta nuevamente.');
+            return;
+        }
         
-        if (response.ok) {
+        // Verificar que el código fue verificado correctamente
+        if (response.ok && result.verified === true) {
             showFormStatus('success', '¡Registro exitoso! Bienvenido a la plataforma.');
             setTimeout(() => {
                 showPage('home');
                 resetAuthForm();
             }, 2000);
         } else {
-            showFormStatus('error', result.error || 'Código incorrecto');
+            // Mostrar el mensaje de error del servidor
+            const errorMessage = result.message || result.error || 'Código incorrecto. Intenta nuevamente.';
+            showFormStatus('error', errorMessage);
         }
     } catch (error) {
         console.error('Error:', error);
-        showFormStatus('error', 'Error de conexión. Intenta nuevamente.');
+        showFormStatus('error', 'Error de conexión. Verifica que el servidor esté funcionando.');
     } finally {
         verifyCodeBtn.disabled = false;
         verifyCodeBtn.innerHTML = '<i class="fas fa-check"></i> Verificar Código';
@@ -428,6 +447,7 @@ function resetAuthForm() {
     resendCodeBtn.style.display = 'none';
     clearFieldErrors();
     clearFormStatus();
+    currentLeadId = null; // Limpiar el leadId al resetear el formulario
     
     if (countdownTimer) {
         clearInterval(countdownTimer);

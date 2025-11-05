@@ -139,26 +139,23 @@ function validateSendCodeRequest(req, res, next) {
 // ============================================
 
 function validateVerifyCodeRequest(req, res, next) {
-  const { phone, code, password } = req.body;
+  const { idLead, codeEscritoPorElUsuario } = req.body;
   const errors = [];
 
-  // Validar teléfono
-  if (!phone || !isValidPhone(phone)) {
-    errors.push('El teléfono es requerido y debe tener un formato válido');
+  // Validar idLead (debe ser un número)
+  if (!idLead) {
+    errors.push('El idLead es requerido');
+  } else if (typeof idLead !== 'number' && isNaN(Number(idLead))) {
+    errors.push('El idLead debe ser un número válido');
   } else {
-    req.body.phone = phone.trim();
+    req.body.idLead = Number(idLead);
   }
 
   // Validar código
-  if (!code || !isValidCode(code)) {
+  if (!codeEscritoPorElUsuario || !isValidCode(codeEscritoPorElUsuario)) {
     errors.push('El código de verificación debe ser de 5 dígitos');
   } else {
-    req.body.code = code.trim();
-  }
-
-  // Validar contraseña
-  if (!password || !isValidPassword(password)) {
-    errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    req.body.codeEscritoPorElUsuario = codeEscritoPorElUsuario.trim();
   }
 
   if (errors.length > 0) {
@@ -357,27 +354,35 @@ app.post('/api/send-code', validateSendCodeRequest, async (req, res) => {
 
 app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
   try {
-    const { phone, code, password } = req.body;
+    const { idLead, codeEscritoPorElUsuario } = req.body;
     
     // Verificar si el backend está disponible
     const backendAvailable = await checkBackendHealth();
     
     if (!backendAvailable) {
       logError('verify-code', new Error('Backend no disponible'), { mode: 'development' });
-      const result = simulateVerifyCode(code, phone);
+      // Simular verificación para desarrollo
+      const result = {
+        status: 'ok',
+        message: 'Código verificado exitosamente (modo desarrollo)',
+        verified: codeEscritoPorElUsuario === '12345'
+      };
       
-      if (result.success) {
+      if (result.verified) {
         return res.json(result);
       } else {
-        return sendErrorResponse(res, 400, result.error);
+        return sendErrorResponse(res, 200, 'Código incorrecto', {
+          status: 'error',
+          message: 'Código incorrecto',
+          verified: false
+        });
       }
     }
     
     // Datos sanitizados ya están en req.body gracias al middleware
     const response = await axios.post(`${BACKEND_URL}/api/verify-code`, {
-      phone,
-      code,
-      password // El backend debe manejar el hash
+      idLead,
+      codeEscritoPorElUsuario
     }, {
       timeout: 20000,
       validateStatus: (status) => status >= 200 && status < 600 // Aceptar todos los códigos de respuesta
@@ -415,19 +420,28 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     // Si es error de conexión, simular respuesta para desarrollo
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
       logError('verify-code', error, { mode: 'development', action: 'simulating' });
-      const result = simulateVerifyCode(req.body.code, req.body.phone);
+      const code = req.body?.codeEscritoPorElUsuario;
+      const result = {
+        status: 'ok',
+        message: 'Código verificado exitosamente (modo desarrollo)',
+        verified: code === '12345'
+      };
       
-      if (result.success) {
+      if (result.verified) {
         return res.json(result);
       } else {
-        return sendErrorResponse(res, 400, result.error);
+        return sendErrorResponse(res, 200, 'Código incorrecto', {
+          status: 'error',
+          message: 'Código incorrecto',
+          verified: false
+        });
       }
     }
 
     // Acceder a los valores desde req.body ya que pueden no estar disponibles en el catch
-    const phone = req.body?.phone;
-    const code = req.body?.code;
-    logError('verify-code', error, { requestBody: { phone, code: '***' } });
+    const idLead = req.body?.idLead;
+    const code = req.body?.codeEscritoPorElUsuario;
+    logError('verify-code', error, { requestBody: { idLead, code: '***' } });
     sendErrorResponse(res, errorInfo.status || 500, errorInfo.message, errorInfo.details);
   }
 });

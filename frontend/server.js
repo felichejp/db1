@@ -139,26 +139,51 @@ function validateSendCodeRequest(req, res, next) {
 // ============================================
 
 function validateVerifyCodeRequest(req, res, next) {
-  const { phone, code, password } = req.body;
+  const { idLead, codeEscritoPorElUsuario, phone, code, password } = req.body;
   const errors = [];
 
-  // Validar teléfono
-  if (!phone || !isValidPhone(phone)) {
-    errors.push('El teléfono es requerido y debe tener un formato válido');
-  } else {
-    req.body.phone = phone.trim();
-  }
+  // Soporte para el nuevo formato: idLead y codeEscritoPorElUsuario
+  if (idLead !== undefined || codeEscritoPorElUsuario !== undefined) {
+    // Validar idLead (debe ser un número)
+    if (!idLead) {
+      errors.push('El ID del lead es requerido');
+    } else if (typeof idLead !== 'number' && isNaN(Number(idLead))) {
+      errors.push('El ID del lead debe ser un número válido');
+    } else {
+      req.body.idLead = Number(idLead);
+    }
 
-  // Validar código
-  if (!code || !isValidCode(code)) {
-    errors.push('El código de verificación debe ser de 5 dígitos');
-  } else {
-    req.body.code = code.trim();
-  }
+    // Validar código
+    if (!codeEscritoPorElUsuario || !isValidCode(codeEscritoPorElUsuario)) {
+      errors.push('El código de verificación debe ser de 5 dígitos');
+    } else {
+      req.body.codeEscritoPorElUsuario = String(codeEscritoPorElUsuario).trim();
+    }
+  } 
+  // Soporte para el formato anterior: phone, code y password
+  else if (phone !== undefined || code !== undefined || password !== undefined) {
+    // Validar teléfono
+    if (!phone || !isValidPhone(phone)) {
+      errors.push('El teléfono es requerido y debe tener un formato válido');
+    } else {
+      req.body.phone = phone.trim();
+    }
 
-  // Validar contraseña
-  if (!password || !isValidPassword(password)) {
-    errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    // Validar código
+    if (!code || !isValidCode(code)) {
+      errors.push('El código de verificación debe ser de 5 dígitos');
+    } else {
+      req.body.code = code.trim();
+    }
+
+    // Validar contraseña
+    if (!password || !isValidPassword(password)) {
+      errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    }
+  } 
+  // Si no se proporciona ninguno de los formatos
+  else {
+    errors.push('Se requiere proporcionar idLead y codeEscritoPorElUsuario, o phone, code y password');
   }
 
   if (errors.length > 0) {
@@ -260,18 +285,24 @@ function simulateSendCode() {
 }
 
 // Función para simular verificación de código (modo desarrollo)
-function simulateVerifyCode(code, phone) {
+function simulateVerifyCode(code, idLeadOrPhone) {
   if (code === '12345') {
     return {
+      status: 'ok',
+      verified: true,
+      message: 'Codigo verificado exitosamente (modo desarrollo)',
+      // Mantener compatibilidad con formato anterior
       success: true,
-      message: 'Código verificado exitosamente (modo desarrollo)',
       user: {
         name: 'Usuario de Prueba',
-        phone: phone
+        phone: idLeadOrPhone
       }
     };
   } else {
     return {
+      status: 'ok',
+      verified: false,
+      message: 'Código incorrecto (modo desarrollo)',
       success: false,
       error: 'Código incorrecto'
     };
@@ -357,28 +388,49 @@ app.post('/api/send-code', validateSendCodeRequest, async (req, res) => {
 
 app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
   try {
-    const { phone, code, password } = req.body;
+    const { idLead, codeEscritoPorElUsuario, phone, code, password } = req.body;
+    
+    // Determinar qué formato usar y preparar los datos para el backend
+    let backendData = {};
+    
+    // Si se proporciona el nuevo formato, usarlo
+    if (idLead !== undefined && codeEscritoPorElUsuario !== undefined) {
+      backendData = {
+        idLead,
+        codeEscritoPorElUsuario
+      };
+    } 
+    // Si se proporciona el formato anterior, convertir a nuevo formato
+    // NOTA: Esto requeriría buscar el idLead por teléfono, por ahora enviamos el formato anterior
+    // pero el backend espera el nuevo formato, así que esto fallará hasta que se implemente la conversión
+    else if (phone !== undefined && code !== undefined) {
+      // Por ahora, intentamos enviar el formato anterior pero el backend no lo aceptará
+      // TODO: Implementar búsqueda de idLead por teléfono si es necesario
+      backendData = {
+        phone,
+        code,
+        password
+      };
+    }
     
     // Verificar si el backend está disponible
     const backendAvailable = await checkBackendHealth();
     
     if (!backendAvailable) {
       logError('verify-code', new Error('Backend no disponible'), { mode: 'development' });
-      const result = simulateVerifyCode(code, phone);
+      const verifyCode = codeEscritoPorElUsuario || code;
+      const verifyId = idLead || phone;
+      const result = simulateVerifyCode(verifyCode, verifyId);
       
-      if (result.success) {
+      if (result.verified) {
         return res.json(result);
       } else {
-        return sendErrorResponse(res, 400, result.error);
+        return res.json(result);
       }
     }
     
     // Datos sanitizados ya están en req.body gracias al middleware
-    const response = await axios.post(`${BACKEND_URL}/api/verify-code`, {
-      phone,
-      code,
-      password // El backend debe manejar el hash
-    }, {
+    const response = await axios.post(`${BACKEND_URL}/api/verify-code`, backendData, {
       timeout: 20000,
       validateStatus: (status) => status >= 200 && status < 600 // Aceptar todos los códigos de respuesta
     });
@@ -399,7 +451,12 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
         backendError: true, 
         backendStatus: response.status,
         backendData: response.data,
-        requestBody: { phone, code: '***' } 
+        requestBody: { 
+          idLead: idLead || 'N/A', 
+          codeEscritoPorElUsuario: codeEscritoPorElUsuario ? '***' : 'N/A',
+          phone: phone || 'N/A',
+          code: code ? '***' : 'N/A'
+        } 
       });
       
       return sendErrorResponse(
@@ -415,19 +472,30 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     // Si es error de conexión, simular respuesta para desarrollo
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
       logError('verify-code', error, { mode: 'development', action: 'simulating' });
-      const result = simulateVerifyCode(req.body.code, req.body.phone);
+      const verifyCode = req.body?.codeEscritoPorElUsuario || req.body?.code;
+      const verifyId = req.body?.idLead || req.body?.phone;
+      const result = simulateVerifyCode(verifyCode, verifyId);
       
-      if (result.success) {
+      if (result.verified) {
         return res.json(result);
       } else {
-        return sendErrorResponse(res, 400, result.error);
+        return res.json(result);
       }
     }
 
     // Acceder a los valores desde req.body ya que pueden no estar disponibles en el catch
+    const idLead = req.body?.idLead;
+    const codeEscritoPorElUsuario = req.body?.codeEscritoPorElUsuario;
     const phone = req.body?.phone;
     const code = req.body?.code;
-    logError('verify-code', error, { requestBody: { phone, code: '***' } });
+    logError('verify-code', error, { 
+      requestBody: { 
+        idLead: idLead || 'N/A', 
+        codeEscritoPorElUsuario: codeEscritoPorElUsuario ? '***' : 'N/A',
+        phone: phone || 'N/A',
+        code: code ? '***' : 'N/A'
+      } 
+    });
     sendErrorResponse(res, errorInfo.status || 500, errorInfo.message, errorInfo.details);
   }
 });

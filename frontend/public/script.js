@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let currentLeadId = null; // Guardar el ID del lead después de enviar el código
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -312,6 +313,8 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok) {
+            // Guardar el leadId para usarlo al verificar el código
+            currentLeadId = result.leadId;
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
@@ -330,11 +333,17 @@ async function sendVerificationCode() {
 // Verificación de código
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
-    const phone = document.getElementById('whatsappPhone').value.trim();
+    const idLead = document.getElementById('idLead').value.trim();
     const password = document.getElementById('password').value;
     
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
+        return;
+    }
+    
+    // Verificar que tengamos el leadId
+    if (!currentLeadId) {
+        showFormStatus('error', 'Por favor, envía el código primero');
         return;
     }
     
@@ -348,21 +357,21 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: currentLeadId, // Usar el ID del lead guardado
                 codeEscritoPorElUsuario: code,
             })
         });
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result.verified) {
             showFormStatus('success', '¡Registro exitoso! Bienvenido a la plataforma.');
             setTimeout(() => {
                 showPage('home');
                 resetAuthForm();
             }, 2000);
         } else {
-            showFormStatus('error', result.error || 'Código incorrecto');
+            showFormStatus('error', result.message || result.error || 'Código incorrecto');
         }
     } catch (error) {
         console.error('Error:', error);
@@ -428,6 +437,7 @@ function resetAuthForm() {
     resendCodeBtn.style.display = 'none';
     clearFieldErrors();
     clearFormStatus();
+    currentLeadId = null; // Resetear el leadId
     
     if (countdownTimer) {
         clearInterval(countdownTimer);

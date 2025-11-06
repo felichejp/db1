@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let currentLeadId = null; // almacena el id del lead devuelto por el backend
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -315,6 +316,10 @@ async function sendVerificationCode() {
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
+            // Guardar id del lead para la verificación posterior
+            if (result && result.leadId) {
+                currentLeadId = result.leadId;
+            }
         } else {
             showFormStatus('error', result.error || 'Error al enviar el código');
         }
@@ -338,6 +343,11 @@ async function verifyCode() {
         return;
     }
     
+    if (!currentLeadId) {
+        showFormStatus('error', 'No se encontró sesión de verificación. Envía el código primero.');
+        return;
+    }
+    
     try {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
@@ -348,21 +358,22 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: currentLeadId, // id del lead retornado por /send-code
                 codeEscritoPorElUsuario: code,
             })
         });
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result === true) {
             showFormStatus('success', '¡Registro exitoso! Bienvenido a la plataforma.');
             setTimeout(() => {
                 showPage('home');
                 resetAuthForm();
+                currentLeadId = null;
             }, 2000);
         } else {
-            showFormStatus('error', result.error || 'Código incorrecto');
+            showFormStatus('error', 'Código incorrecto');
         }
     } catch (error) {
         console.error('Error:', error);

@@ -139,26 +139,19 @@ function validateSendCodeRequest(req, res, next) {
 // ============================================
 
 function validateVerifyCodeRequest(req, res, next) {
-  const { phone, code, password } = req.body;
+  const { idLead, codeEscritoPorElUsuario } = req.body;
   const errors = [];
 
-  // Validar teléfono
-  if (!phone || !isValidPhone(phone)) {
-    errors.push('El teléfono es requerido y debe tener un formato válido');
-  } else {
-    req.body.phone = phone.trim();
+  // Validar idLead
+  if (idLead === undefined || idLead === null || String(idLead).trim() === '') {
+    errors.push('El idLead es requerido');
   }
 
-  // Validar código
-  if (!code || !isValidCode(code)) {
+  // Validar código (5 dígitos)
+  if (!codeEscritoPorElUsuario || !isValidCode(String(codeEscritoPorElUsuario))) {
     errors.push('El código de verificación debe ser de 5 dígitos');
   } else {
-    req.body.code = code.trim();
-  }
-
-  // Validar contraseña
-  if (!password || !isValidPassword(password)) {
-    errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    req.body.codeEscritoPorElUsuario = String(codeEscritoPorElUsuario).trim();
   }
 
   if (errors.length > 0) {
@@ -357,14 +350,14 @@ app.post('/api/send-code', validateSendCodeRequest, async (req, res) => {
 
 app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
   try {
-    const { phone, code, password } = req.body;
+    const { idLead, codeEscritoPorElUsuario } = req.body;
     
     // Verificar si el backend está disponible
     const backendAvailable = await checkBackendHealth();
     
     if (!backendAvailable) {
       logError('verify-code', new Error('Backend no disponible'), { mode: 'development' });
-      const result = simulateVerifyCode(code, phone);
+      const result = simulateVerifyCode(codeEscritoPorElUsuario, idLead);
       
       if (result.success) {
         return res.json(result);
@@ -375,9 +368,8 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     
     // Datos sanitizados ya están en req.body gracias al middleware
     const response = await axios.post(`${BACKEND_URL}/api/verify-code`, {
-      phone,
-      code,
-      password // El backend debe manejar el hash
+      idLead,
+      codeEscritoPorElUsuario
     }, {
       timeout: 20000,
       validateStatus: (status) => status >= 200 && status < 600 // Aceptar todos los códigos de respuesta
@@ -399,7 +391,7 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
         backendError: true, 
         backendStatus: response.status,
         backendData: response.data,
-        requestBody: { phone, code: '***' } 
+        requestBody: { idLead, code: '***' } 
       });
       
       return sendErrorResponse(
@@ -415,7 +407,7 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     // Si es error de conexión, simular respuesta para desarrollo
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
       logError('verify-code', error, { mode: 'development', action: 'simulating' });
-      const result = simulateVerifyCode(req.body.code, req.body.phone);
+      const result = simulateVerifyCode(req.body.codeEscritoPorElUsuario, req.body.idLead);
       
       if (result.success) {
         return res.json(result);
@@ -425,9 +417,9 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     }
 
     // Acceder a los valores desde req.body ya que pueden no estar disponibles en el catch
-    const phone = req.body?.phone;
-    const code = req.body?.code;
-    logError('verify-code', error, { requestBody: { phone, code: '***' } });
+    const idLead = req.body?.idLead;
+    const code = req.body?.codeEscritoPorElUsuario;
+    logError('verify-code', error, { requestBody: { idLead, code: '***' } });
     sendErrorResponse(res, errorInfo.status || 500, errorInfo.message, errorInfo.details);
   }
 });

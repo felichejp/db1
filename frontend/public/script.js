@@ -348,9 +348,8 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                phone: phone,
-                code: code,
-                password: password
+                idLead: phone, // Aqui va el id del lead
+                codeEscritoPorElUsuario: code,
             })
         });
         

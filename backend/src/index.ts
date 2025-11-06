@@ -4,7 +4,8 @@ import { Database } from './database';
 import { DatabaseConfig } from './struct';
 import cors from 'cors';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3000;
@@ -40,6 +41,38 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
+});
+
+app.post('/api/verify-code', async (req: Request, res: Response) => {
+  try {
+    const { idLead, codeEscritoPorElUsuario } = req.body;
+    // consultar el codigo en la base de datos
+    // en la tabla codeLead
+    // comparar con el còdigo escrito por el usuario
+    // con el codigo en la base de datos
+    // regresar true o false
+    const result = await database.query(
+      `SELECT code FROM "codeLead" WHERE "idLead" = $1 ORDER BY id DESC LIMIT 1`,
+      [idLead]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json(false);
+    } 
+
+    const codigoReal = result.rows[0].code;
+
+    const esValido = codigoReal === codeEscritoPorElUsuario;
+    res.json(esValido);
+
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 app.post('/api/send-code', async (req: Request, res: Response) => {

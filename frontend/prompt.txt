@@ -1,0 +1,33 @@
+Eres un experto programador en nodejs y frontend
+Necesito implementar un frontend basico utilizando únicamente nodejs y html
+Hace llamadas a un backend que está en otro proyecto, el backen realiza la conexión a una base de datos y envio de whatsapps o sms
+Se implementa en una aplicación SPA con tema oscuro
+
+El proyecto se coloca en la carpeta frontend
+
+Resumen de alto nivel
+- Es una aplicación para asesoria de alumnos impartida por otros alumnos
+- Se requiere una lista de alumnos que reciben asesoría agrupados por materia
+- Se requiere una lista de alumnos que imparten la asesoría y que materia imparte
+- Por cada grupo se requiere un profesor responsable
+
+La organización de la aplicación se divide en:
+
+- Necesito una página de inicio con:
+    - Menú lateral
+    - Presentación de la aplicación
+    - Motivos para utilizar la aplicación
+    - Logos de la aplicación
+    - Boton de autenticación/registro que pasa a la página de registro/autenticación de lead
+
+- En la página de autenticación/registro de lead, se requieren los campos
+    - Nombre del contacto
+    - Nombre de la institución
+    - Telefono de contacto
+    - Teléfono movil con acceso a WhatsApp
+    - Se envía un código de 5 digitos al número de teléfono movil por el canal de WhatsApp
+    - Contraseña, se verifica que se cuente con letra, número, caracter ASCII basico, mínimo 8 caracteres
+    - Botón para validar el código, Si es correcto se registra el lead en la base de datos
+    - Botón con contador de 1 minuto para enviar otro código en caso de no recibir el anterior
+
+Fin de la primera parte

@@ -44,12 +44,43 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
-    const { idLead, codeEscritoPorElUsuario } = req.body;
-    // consultar el codigo en la base de datos
-    // en la tabla codeLead
-    // comparar con el còdigo escrito por el usuario
-    // con el codigo en la base de datos
-    // regresar true o false
+    const codeFromUser: string | undefined = req.body.code || req.body.codeEscritoPorElUsuario;
+    const providedLeadId: number | undefined = req.body.idLead;
+
+    if (!providedLeadId || !codeFromUser) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Parámetros inválidos: se requiere idLead y code',
+      });
+    }
+
+    const leadId = Number(providedLeadId);
+    if (Number.isNaN(leadId)) {
+      return res.status(400).json({ status: 'error', message: 'idLead inválido' });
+    }
+
+    // Obtener el último código asociado al lead
+    const codeQuery = `
+      SELECT code
+      FROM "codeLead"
+      WHERE "idLead" = $1
+      ORDER BY id DESC
+      LIMIT 1
+    `;
+    const codeResult = await database.query(codeQuery, [leadId]);
+
+    if (codeResult.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'No hay código registrado para este lead' });
+    }
+
+    const codeInDatabase: string = codeResult.rows[0].code;
+    const isValid = codeInDatabase === String(codeFromUser);
+
+    if (!isValid) {
+      return res.status(400).json({ status: 'error', message: 'Código incorrecto', valid: false });
+    }
+
+    return res.status(200).json({ status: 'ok', message: 'Código verificado', valid: true, leadId });
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

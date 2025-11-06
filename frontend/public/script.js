@@ -312,7 +312,7 @@ async function sendVerificationCode() {
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result.status === 'ok') {
             // Guardar el leadId para usarlo al verificar el código
             currentLeadId = result.leadId;
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
@@ -333,9 +333,10 @@ async function sendVerificationCode() {
 // Verificación de código
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
-    const idLead = document.getElementById('idLead').value.trim();
+    const phone = document.getElementById('whatsappPhone').value.trim();
     const password = document.getElementById('password').value;
     
+
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
         return;

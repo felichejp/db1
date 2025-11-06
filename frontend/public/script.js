@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let CURRENT_ID_LEAD = null;
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -313,6 +314,7 @@ async function sendVerificationCode() {
         
         if (response.ok) {
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
+            CURRENT_ID_LEAD = result.leadId;
             showCodeVerification();
             startCountdown();
         } else {
@@ -330,14 +332,12 @@ async function sendVerificationCode() {
 // Verificación de código
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
-    const phone = document.getElementById('whatsappPhone').value.trim();
-    const password = document.getElementById('password').value;
-    
+
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
         return;
     }
-    
+
     try {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
@@ -348,7 +348,7 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: CURRENT_ID_LEAD,
                 codeEscritoPorElUsuario: code,
             })
         });

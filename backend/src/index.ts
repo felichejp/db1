@@ -45,11 +45,36 @@ app.get('/health', (req: Request, res: Response) => {
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
+    
     // consultar el codigo en la base de datos
     // en la tabla codeLead
+    const query = `
+      SELECT code 
+      FROM "codeLead" 
+      WHERE "idLead" = $1 
+      ORDER BY id DESC 
+      LIMIT 1
+    `;
+    const result = await database.query(query, [idLead]);
+    
+    // Si no se encuentra el código, retornar false
+    if (result.rows.length === 0) {
+      return res.status(200).json({ verified: false });
+    }
+    
     // comparar con el còdigo escrito por el usuario
     // con el codigo en la base de datos
+    const codeEnBaseDeDatos = result.rows[0].code;
+    const esValido = codeEscritoPorElUsuario === codeEnBaseDeDatos;
+    console.log('codeEnBaseDeDatos', codeEnBaseDeDatos);
+    console.log('codeEscritoPorElUsuario', codeEscritoPorElUsuario);
     // regresar true o false
+    if(esValido) {
+      return res.status(200).json({ verified: true });
+    } else {
+      return res.status(200).json({ verified: false });
+    }
+
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

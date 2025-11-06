@@ -139,26 +139,41 @@ function validateSendCodeRequest(req, res, next) {
 // ============================================
 
 function validateVerifyCodeRequest(req, res, next) {
-  const { phone, code, password } = req.body;
+  const { phone, code, password, idLead, codeEscritoPorElUsuario } = req.body;
   const errors = [];
 
-  // Validar teléfono
-  if (!phone || !isValidPhone(phone)) {
-    errors.push('El teléfono es requerido y debe tener un formato válido');
+  // Si viene con los campos del backend (idLead, codeEscritoPorElUsuario)
+  if (idLead && codeEscritoPorElUsuario) {
+    // Validar código
+    if (!codeEscritoPorElUsuario || !isValidCode(codeEscritoPorElUsuario)) {
+      errors.push('El código de verificación debe ser de 5 dígitos');
+    } else {
+      req.body.codeEscritoPorElUsuario = codeEscritoPorElUsuario.trim();
+    }
+    // idLead puede ser cualquier valor (número o string)
+    if (!idLead) {
+      errors.push('El idLead es requerido');
+    }
   } else {
-    req.body.phone = phone.trim();
-  }
+    // Validación original para campos del frontend
+    // Validar teléfono
+    if (!phone || !isValidPhone(phone)) {
+      errors.push('El teléfono es requerido y debe tener un formato válido');
+    } else {
+      req.body.phone = phone.trim();
+    }
 
-  // Validar código
-  if (!code || !isValidCode(code)) {
-    errors.push('El código de verificación debe ser de 5 dígitos');
-  } else {
-    req.body.code = code.trim();
-  }
+    // Validar código
+    if (!code || !isValidCode(code)) {
+      errors.push('El código de verificación debe ser de 5 dígitos');
+    } else {
+      req.body.code = code.trim();
+    }
 
-  // Validar contraseña
-  if (!password || !isValidPassword(password)) {
-    errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    // Validar contraseña
+    if (!password || !isValidPassword(password)) {
+      errors.push('La contraseña es requerida y debe cumplir con los requisitos de seguridad');
+    }
   }
 
   if (errors.length > 0) {
@@ -358,13 +373,22 @@ app.post('/api/send-code', validateSendCodeRequest, async (req, res) => {
 app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
   try {
     const { phone, code, password } = req.body;
+    // También aceptar los campos que vienen directamente del frontend
+    const { idLead, codeEscritoPorElUsuario } = req.body;
+    
+    // Usar idLead si viene, sino usar phone como idLead
+    const leadId = idLead || phone;
+    const codeUsuario = codeEscritoPorElUsuario || code;
+    
+    console.log('Frontend - leadId recibido:', leadId);
+    console.log('Frontend - codeEscritoPorElUsuario:', codeUsuario);
     
     // Verificar si el backend está disponible
     const backendAvailable = await checkBackendHealth();
     
     if (!backendAvailable) {
       logError('verify-code', new Error('Backend no disponible'), { mode: 'development' });
-      const result = simulateVerifyCode(code, phone);
+      const result = simulateVerifyCode(codeUsuario, leadId);
       
       if (result.success) {
         return res.json(result);
@@ -374,14 +398,22 @@ app.post('/api/verify-code', validateVerifyCodeRequest, async (req, res) => {
     }
     
     // Datos sanitizados ya están en req.body gracias al middleware
-    const response = await axios.post(`${BACKEND_URL}/api/verify-code`, {
-      phone,
-      code,
-      password // El backend debe manejar el hash
-    }, {
+    // Enviar al backend los campos que espera
+    // Si leadId parece ser un número, enviarlo como idLead, sino enviarlo como phone
+    const isNumeric = /^\d+$/.test(leadId);
+    const requestBody = isNumeric 
+      ? { idLead: parseInt(leadId), codeEscritoPorElUsuario: codeUsuario }
+      : { phone: leadId, codeEscritoPorElUsuario: codeUsuario };
+    
+    console.log('Frontend - Enviando al backend:', requestBody);
+    
+    const response = await axios.post(`${BACKEND_URL}/api/verify-code`, requestBody, {
       timeout: 20000,
       validateStatus: (status) => status >= 200 && status < 600 // Aceptar todos los códigos de respuesta
     });
+
+    console.log('Frontend - Respuesta del backend:', response.data);
+    console.log('Frontend - verified:', response.data?.verified);
 
     // Si la respuesta es exitosa (2xx), responder normalmente
     if (response.status >= 200 && response.status < 300) {

@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let idLeadGlobal = null;
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -312,6 +313,7 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok) {
+            idLeadGlobal = result.leadId; // Guardar idLead globalmente
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
@@ -348,7 +350,7 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: idLeadGlobal, // Aqui va el id del lead
                 codeEscritoPorElUsuario: code,
             })
         });

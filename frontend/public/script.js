@@ -23,6 +23,7 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+let currentLeadId = null; // Almacenar el ID del lead después de enviar el código
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -312,11 +313,16 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok) {
+            // Guardar el leadId que retorna el backend
+            currentLeadId = result.leadId;
+            console.log('✅ Código enviado. LeadId guardado:', currentLeadId);
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
         } else {
+            console.error('❌ Error al enviar código:', result);
             showFormStatus('error', result.error || 'Error al enviar el código');
+            currentLeadId = null; // Limpiar el leadId si hay error
         }
     } catch (error) {
         console.error('Error:', error);
@@ -330,11 +336,15 @@ async function sendVerificationCode() {
 // Verificación de código
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
-    const phone = document.getElementById('whatsappPhone').value.trim();
-    const password = document.getElementById('password').value;
     
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
+        return;
+    }
+    
+    // Verificar que tenemos un leadId válido
+    if (!currentLeadId) {
+        showFormStatus('error', 'Error: No se encontró el ID del registro. Por favor, envía el código nuevamente.');
         return;
     }
     
@@ -342,27 +352,40 @@ async function verifyCode() {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
         
+        // Log para debugging
+        console.log('🔍 Verificando código:', {
+            leadId: currentLeadId,
+            codigo: code,
+            codigoType: typeof code
+        });
+        
         const response = await fetch(`${API_BASE_URL}/verify-code`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                idLead: phone, // Aqui va el id del lead
+                idLead: currentLeadId,
                 codeEscritoPorElUsuario: code,
             })
         });
         
         const result = await response.json();
         
-        if (response.ok) {
-            showFormStatus('success', '¡Registro exitoso! Bienvenido a la plataforma.');
+        // Log de respuesta
+        console.log('📥 Respuesta del servidor:', result);
+        
+        if (response.ok && result.codeCorrect) {
+            // Código correcto
+            showFormStatus('success', '¡Código correcto! Registro exitoso. Bienvenido a la plataforma.');
             setTimeout(() => {
                 showPage('home');
                 resetAuthForm();
+                currentLeadId = null; // Limpiar el leadId
             }, 2000);
         } else {
-            showFormStatus('error', result.error || 'Código incorrecto');
+            // Código incorrecto
+            showFormStatus('error', result.message || 'Código incorrecto. Por favor, verifica el código e intenta nuevamente.');
         }
     } catch (error) {
         console.error('Error:', error);
@@ -428,6 +451,7 @@ function resetAuthForm() {
     resendCodeBtn.style.display = 'none';
     clearFieldErrors();
     clearFormStatus();
+    currentLeadId = null; // Limpiar el leadId al resetear el formulario
     
     if (countdownTimer) {
         clearInterval(countdownTimer);

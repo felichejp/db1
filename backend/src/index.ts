@@ -134,15 +134,21 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
     const code = Math.floor(10000 + Math.random() * 89999) + '';
     const resultCode = await database.query(insertCodeLeadQuery, [result.rows[0].id, code]);*/
 
-    const insertQuery = `WITH tabla_lead AS (INSERT INTO lead (name, institution,
+    await database.query('BEGIN;');
+    const insertQuery = `
+    
+    
+    WITH tabla_lead AS (INSERT INTO lead (name, institution,
     "contactPhone", phone) VALUES ($1,$2,$3,$4) RETURNING id),
 
     tabla_lead_password AS (INSERT INTO "leadPassword" ("idLead", "password")
     VALUES ((SELECT id FROM tabla_lead), $5) RETURNING id)
 
     INSERT INTO "codeLead" ("idLead", code) VALUES ((SELECT id FROM tabla_lead), $6)
-    RETURNING (SELECT id FROM tabla_lead);`
+    RETURNING (SELECT id FROM tabla_lead);
+    `
 
+    await database.query('COMMIT;');
     const code = Math.floor(10000 + Math.random() * 89999) + '';
     const result = await database.query(insertQuery, [
       name,

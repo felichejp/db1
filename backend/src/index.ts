@@ -88,8 +88,9 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
 
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
+
     // Store in database
-    const insertQuery = `
+    /*const insertQuery = `
       INSERT INTO lead (name, institution, "contactPhone", phone)
       VALUES ($1, $2, $3, $4)
       RETURNING id;
@@ -111,11 +112,33 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
       INSERT INTO "codeLead" ("idLead", code)
       VALUES ($1, $2)
       RETURNING id;
-    `;
-    const code = Math.floor(10000 + Math.random() * 89999) + '';
-    const resultCode = await database.query(insertCodeLeadQuery, [result.rows[0].id, code]);
+    `;*/
 
-    if (resultPassword.rows.length === 0 || resultCode.rows.length === 0) {
+    const transaction = `
+    with tabla_lead as (
+        insert into lead (name, institution, "contactPhone", phone)
+        values ($1, $2, $3, $4)
+        returning id
+      ),
+      tabla_lead_password as (
+        insert into "leadPassword" ("idLead", password)
+        values ((select id from tabla_lead), $5)
+        returning "idLead"
+      )
+      
+      insert into "codeLead" ("idLead", code)
+      values ((select "idLead" from tabla_lead_password), $6) 
+      returning "idLead";
+  `;
+
+
+    const code = Math.floor(10000 + Math.random() * 89999) + '';
+    
+    await database.query('begin;');
+    const result = await database.query(transaction, [name, institution, contactPhone, phone, hashedPassword, code]);
+    await database.query('commit;');
+
+    if (result.rows.length === 0) {
       return res.status(500).json({
         status: 'error',
         message: 'Failed to save password or code',
@@ -127,7 +150,7 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
     res.status(200).json({
       status: 'ok',
       message: 'Code sent successfully',
-      leadId: result.rows[0].id,
+      leadId: result.rows[0].idLead,
     });
   } catch (error) {
     console.error('Error processing request:', error);

@@ -45,13 +45,57 @@ app.get('/health', (req: Request, res: Response) => {
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
-    // consultar el codigo en la base de datos
-    // en la tabla codeLead
-    // comparar con el còdigo escrito por el usuario
-    // con el codigo en la base de datos
-    // regresar true o false
+
+    console.log(`🔍 Verifying code for lead ID: ${idLead}`);
+    console.log(`📝 User entered code: ${codeEscritoPorElUsuario}`);
+
+    // Validar que los campos requeridos estén presentes
+    if (!idLead || !codeEscritoPorElUsuario) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required fields: idLead and codeEscritoPorElUsuario',
+      });
+    }
+
+    // Consultar el código en la base de datos en la tabla codeLead
+    const query = `
+      SELECT code FROM "codeLead" 
+      WHERE "idLead" = $1 
+      ORDER BY id DESC 
+      LIMIT 1
+    `;
+    console.log(`📊 Querying database for lead ${idLead}...`);
+    const result = await database.query(query, [idLead]);
+
+    // Verificar si se encontró algún código para el lead
+    if (result.rows.length === 0) {
+      console.log(`❌ No code found in database for lead ${idLead}`);
+      return res.status(404).json({
+        status: 'error',
+        message: 'No code found for this lead',
+        verified: false
+      });
+    }
+
+    const codigoEnBaseDeDatos = result.rows[0].code;
+    console.log(`📋 Code from database: ${codigoEnBaseDeDatos}`);
+
+    // Comparar con el código escrito por el usuario
+    const esValido = codigoEnBaseDeDatos === codeEscritoPorElUsuario;
+    
+    console.log(`✅ Code comparison result: ${esValido ? 'VALID' : 'INVALID'}`);
+    console.log(`📊 Verification ${esValido ? 'SUCCESSFUL' : 'FAILED'} for lead ${idLead}`);
+
+    // Regresar true o false
+    res.status(200).json({
+      status: 'ok',
+      message: esValido ? 'Code verified successfully' : 'Invalid code',
+      verified: esValido
+    });
+
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('❌ Error processing verify-code request:', error);
     res.status(500).json({
       status: 'error',
       message: 'Internal server error',
@@ -59,6 +103,7 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
     });
   }
 });
+
 
 app.post('/api/send-code', async (req: Request, res: Response) => {
   try {

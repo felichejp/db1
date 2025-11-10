@@ -64,7 +64,6 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
 
     const esValido = codigoReal === codeEscritoPorElUsuario;
     res.json(esValido);
-
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

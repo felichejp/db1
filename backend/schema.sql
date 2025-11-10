@@ -1,0 +1,42 @@
+-- crear la base de datos
+CREATE DATABASE IF NOT EXISTS newDB;
+
+-- usar la base de datos
+USE newDB;
+
+-- crear la tabla  EXAMPLE
+CREATE TABLE IF NOT EXISTS codeLead (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(255) NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+--Aqui empece a crear las tablas 
+CREATE TABLE student(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    lastName VARCHAR(64) NOT NULL,
+    institution VARCHAR(128) NOT NULL,
+    career VARCHAR(128) NOT NULL,
+    semester INT NOT NULL,
+    group VARCHAR(120) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(16) NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE advisor(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    lastName VARCHAR(64) NOT NULL,
+    department VARCHAR(128) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE class(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    code VARCHAR(128) NOT NULL UNIQUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

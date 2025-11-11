@@ -313,7 +313,6 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok && result.status === 'ok') {
-            // Guardar el leadId para usarlo en la verificación
             currentLeadId = result.leadId;
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
@@ -361,7 +360,7 @@ async function verifyCode() {
             })
         });
         
-        // Verificar si la respuesta es JSON válido
+        
         let result;
         try {
             result = await response.json();

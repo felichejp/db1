@@ -44,50 +44,37 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
-    const { idLead, codeEscritoPorElUsuario } = req.body as {
-      idLead?: number | string;
-      codeEscritoPorElUsuario?: string;
-    };
-
-    if (!idLead || !codeEscritoPorElUsuario) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Faltan campos requeridos: idLead y codeEscritoPorElUsuario',
-      });
-    }
-
-    const leadId = parseInt(String(idLead), 10);
-    const userCode = String(codeEscritoPorElUsuario).trim();
-
-    if (Number.isNaN(leadId)) {
-      return res.status(400).json({ status: 'error', message: 'idLead inválido' });
-    }
-    if (!/^\d{5}$/.test(userCode)) {
-      return res.status(400).json({ status: 'error', message: 'El código debe ser de 5 dígitos' });
-    }
-
-    const selectQuery = `
-      SELECT code
-      FROM "codeLead"
-      WHERE "idLead" = $1
-      ORDER BY id DESC
-      LIMIT 1;
+    const { idLead, codeEscritoPorElUsuario } = req.body;
+    
+    // consultar el codigo en la base de datos
+    // en la tabla codeLead
+    const query = `
+      SELECT code 
+      FROM "codeLead" 
+      WHERE "idLead" = $1 
+      ORDER BY id DESC 
+      LIMIT 1
     `;
-    const codeResult = await database.query(selectQuery, [leadId]);
-
-    if (codeResult.rowCount === 0) {
-      return res.status(404).json({ status: 'error', message: 'No hay código registrado para este lead' });
+    const result = await database.query(query, [idLead]);
+    
+    // Si no se encuentra el código, retornar false
+    if (result.rows.length === 0) {
+      return res.status(200).json({ verified: false });
+    }
+    
+    // comparar con el còdigo escrito por el usuario
+    // con el codigo en la base de datos
+    const codeEnBaseDeDatos = result.rows[0].code;
+    const esValido = codeEscritoPorElUsuario === codeEnBaseDeDatos;
+    console.log('codeEnBaseDeDatos', codeEnBaseDeDatos);
+    console.log('codeEscritoPorElUsuario', codeEscritoPorElUsuario);
+    // regresar true o false
+    if(esValido) {
+      return res.status(200).json({ verified: true });
+    } else {
+      return res.status(200).json({ verified: false });
     }
 
-    const storedCode: string = String(codeResult.rows[0].code);
-    const verified = storedCode === userCode;
-
-    if (!verified) {
-      return res.status(400).json({ status: 'error', message: 'Código incorrecto', verified: false });
-    }
-
-    // TODO opcional: marcar verificado en alguna tabla (ej. lead.verificado_at)
-    return res.status(200).json({ status: 'ok', message: 'Código verificado', verified: true, idLead: leadId });
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

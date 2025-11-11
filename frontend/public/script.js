@@ -23,7 +23,6 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
-let currentLeadId = null; // <-- NUEVO
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -313,10 +312,6 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok) {
-            // Guardar id del lead devuelto por el backend real
-            if (result && typeof result.leadId !== 'undefined') {
-                currentLeadId = result.leadId;
-            }
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
@@ -336,38 +331,35 @@ async function sendVerificationCode() {
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
     const phone = document.getElementById('whatsappPhone').value.trim();
-    // const password = document.getElementById('password').value; // No requerido por el backend de verificación
-
+    const password = document.getElementById('password').value;
+    
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
         return;
     }
-    if (!currentLeadId) {
-        showFormStatus('error', 'No se encontró el registro del lead. Vuelve a enviar el código.');
-        return;
-    }
-
+    
     try {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-
+        
         const response = await fetch(`${API_BASE_URL}/verify-code`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                idLead: currentLeadId,
-                codeEscritoPorElUsuario: code
+                idLead: phone, // Aqui va el id del lead
+                codeEscritoPorElUsuario: code,
             })
         });
-
+        
         const result = await response.json();
-
+        
         if (response.ok) {
             showFormStatus('success', '¡Registro exitoso! Bienvenido a la plataforma.');
             setTimeout(() => {
                 showPage('home');
                 resetAuthForm();
-                currentLeadId = null; // limpiar
             }, 2000);
         } else {
             showFormStatus('error', result.error || 'Código incorrecto');

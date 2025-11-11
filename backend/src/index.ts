@@ -46,6 +46,7 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
 
+
     // Validar campos requeridos
     if (!idLead || !codeEscritoPorElUsuario) {
       return res.status(400).json({
@@ -105,6 +106,13 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
       message: 'Código verificado correctamente',
       verified: true,
     });
+
+    // consultar el codigo en la base de datos
+    // en la tabla codeLead
+    // comparar con el còdigo escrito por el usuario
+    // con el codigo en la base de datos
+    // regresar true o false
+
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

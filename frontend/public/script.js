@@ -23,7 +23,9 @@ const passwordInput = document.getElementById('password');
 // Variables globales
 let countdownTimer = null;
 let countdownSeconds = 60;
+
 let currentLeadId = null; // Guardar el ID del lead después de enviar el código
+
 
 // Detectar si estamos en modo desarrollo
 function isDevelopmentMode() {
@@ -313,8 +315,10 @@ async function sendVerificationCode() {
         const result = await response.json();
         
         if (response.ok) {
+
             // Guardar el leadId para usarlo en la verificación
             currentLeadId = result.leadId || result.id;
+
             showFormStatus('success', 'Código enviado exitosamente a tu WhatsApp');
             showCodeVerification();
             startCountdown();
@@ -333,17 +337,23 @@ async function sendVerificationCode() {
 // Verificación de código
 async function verifyCode() {
     const code = document.getElementById('verificationCode').value.trim();
+
+    const phone = document.getElementById('whatsappPhone').value.trim();
+    const password = document.getElementById('password').value;
+ 
     
     if (!code || code.length !== 5) {
         showFieldError('codeError', 'Ingresa un código de 5 dígitos');
         return;
     }
     
+
     if (!currentLeadId) {
         showFormStatus('error', 'Error: No se encontró el ID del lead. Por favor, envía el código nuevamente.');
         return;
     }
     
+
     try {
         verifyCodeBtn.disabled = true;
         verifyCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
@@ -354,7 +364,11 @@ async function verifyCode() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+
                 idLead: currentLeadId, // Usar el ID del lead guardado
+
+                idLead: phone, // Aqui va el id del lead
+
                 codeEscritoPorElUsuario: code,
             })
         });
@@ -434,7 +448,9 @@ function resetAuthForm() {
     resendCodeBtn.style.display = 'none';
     clearFieldErrors();
     clearFormStatus();
+
     currentLeadId = null; // Limpiar el leadId al resetear el formulario
+
     
     if (countdownTimer) {
         clearInterval(countdownTimer);

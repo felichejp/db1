@@ -1,3 +1,4 @@
+
 --Aqui empece a crear las tablas
 CREATE TABLE student(
     id SERIAL PRIMARY KEY,
@@ -25,5 +26,18 @@ CREATE TABLE class(
     id SERIAL PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
     code VARCHAR(128) NOT NULL UNIQUE,
+);
+
+-- crear la base de datos
+CREATE DATABASE IF NOT EXISTS newDB;
+
+-- usar la base de datos
+USE newDB;
+
+-- crear la tabla  EXAMPLE
+CREATE TABLE IF NOT EXISTS codeLead (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(255) NOT NULL,
+
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

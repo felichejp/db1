@@ -1,11 +1,17 @@
 import jwt from 'jsonwebtoken';
 import { JwtPayload, UserRole } from '../types/global';
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
 const JWT_EXPIRES_IN = '7d';
 
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET debe tener al menos 32 caracteres');
+/**
+ * Obtiene el JWT_SECRET y valida que tenga al menos 32 caracteres
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET || '';
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET debe tener al menos 32 caracteres. Verifica tu archivo .env');
+  }
+  return secret;
 }
 
 /**
@@ -22,7 +28,7 @@ export function generateToken(
     email
   };
 
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: JWT_EXPIRES_IN,
     algorithm: 'HS256'
   });
@@ -33,7 +39,7 @@ export function generateToken(
  */
 export function verifyToken(token: string): JwtPayload {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET, {
+    const decoded = jwt.verify(token, getJwtSecret(), {
       algorithms: ['HS256']
     }) as JwtPayload;
     return decoded;

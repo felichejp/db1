@@ -1,6 +1,9 @@
+// Cargar variables de entorno PRIMERO, antes de cualquier import
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Express } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { errorHandler } from './middleware/errorHandler';
 import { generalLimiter } from './middleware/rateLimiter';
@@ -18,9 +21,6 @@ import fileRoutes from './routes/files';
 import evaluationRoutes from './routes/evaluations';
 import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
-
-// Cargar variables de entorno
-dotenv.config();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;

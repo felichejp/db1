@@ -9,7 +9,13 @@ const config: PoolConfig = {
   password: process.env.DB_PASSWORD || 'postgres',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000
+  connectionTimeoutMillis: 2000,
+  // SSL para AWS RDS
+  ...(process.env.DB_HOST?.includes('rds.amazonaws.com') && {
+    ssl: {
+      rejectUnauthorized: false
+    }
+  })
 };
 
 const pool = new Pool(config);

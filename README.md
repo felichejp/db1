@@ -77,16 +77,19 @@ npm start
 cd inicio/frontend
 ```
 
-2. El frontend no requiere instalación de dependencias (usa CDN para axios y socket.io).
-
-3. Servir los archivos estáticos. Puedes usar cualquier servidor HTTP:
-
-**Opción 1: Python**
+2. Iniciar el servidor (usa Node.js, no requiere Python):
 ```bash
-python3 -m http.server 8080
+npm start
 ```
 
-**Opción 2: Node.js (http-server)**
+O directamente:
+```bash
+node server.js
+```
+
+**Otras opciones (alternativas):**
+
+**Opción 2: http-server (npx)**
 ```bash
 npx http-server -p 8080
 ```
@@ -95,7 +98,7 @@ npx http-server -p 8080
 - Instalar extensión "Live Server"
 - Click derecho en `index.html` > "Open with Live Server"
 
-4. Abrir en el navegador:
+3. Abrir en el navegador:
 ```
 http://localhost:8080
 ```

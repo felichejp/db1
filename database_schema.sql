@@ -35,12 +35,12 @@ DROP FUNCTION IF EXISTS expire_old_invitations() CASCADE;
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    passwordHash VARCHAR(255) NOT NULL,
+    "passwordHash" VARCHAR(255) NOT NULL,
     nombre VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante')),
     grado INTEGER,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para users
@@ -51,163 +51,163 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE TABLE groups (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
-    profesorId INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    "profesorId" INTEGER REFERENCES users(id) ON DELETE SET NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo', 'completado')),
     descripcion TEXT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para groups
-CREATE INDEX idx_groups_profesor ON groups(profesorId);
+CREATE INDEX idx_groups_profesor ON groups("profesorId");
 CREATE INDEX idx_groups_estado ON groups(estado);
 
 -- Tabla: group_members
 CREATE TABLE group_members (
     id SERIAL PRIMARY KEY,
-    groupId INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
-    userId INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    joinedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (groupId, userId)
+    "groupId" INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+    "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    "joinedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("groupId", "userId")
 );
 
 -- Índices para group_members
-CREATE INDEX idx_group_members_group ON group_members(groupId);
-CREATE INDEX idx_group_members_user ON group_members(userId);
+CREATE INDEX idx_group_members_group ON group_members("groupId");
+CREATE INDEX idx_group_members_user ON group_members("userId");
 
 -- Tabla: tutors
 CREATE TABLE tutors (
     id SERIAL PRIMARY KEY,
-    userId INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL,
-    ratingPromedio DECIMAL(3,2) DEFAULT 0.00 CHECK (ratingPromedio >= 0 AND ratingPromedio <= 5),
-    totalSesiones INTEGER DEFAULT 0,
-    totalEvaluaciones INTEGER DEFAULT 0,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    "ratingPromedio" DECIMAL(3,2) DEFAULT 0.00 CHECK ("ratingPromedio" >= 0 AND "ratingPromedio" <= 5),
+    "totalSesiones" INTEGER DEFAULT 0,
+    "totalEvaluaciones" INTEGER DEFAULT 0,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para tutors
-CREATE INDEX idx_tutors_user ON tutors(userId);
-CREATE INDEX idx_tutors_rating ON tutors(ratingPromedio);
+CREATE INDEX idx_tutors_user ON tutors("userId");
+CREATE INDEX idx_tutors_rating ON tutors("ratingPromedio");
 
 -- Tabla: tutor_subjects
 CREATE TABLE tutor_subjects (
     id SERIAL PRIMARY KEY,
-    tutorId INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
+    "tutorId" INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
     materia VARCHAR(100) NOT NULL,
     nivel VARCHAR(50),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (tutorId, materia)
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("tutorId", materia)
 );
 
 -- Índices para tutor_subjects
-CREATE INDEX idx_tutor_subjects_tutor ON tutor_subjects(tutorId);
+CREATE INDEX idx_tutor_subjects_tutor ON tutor_subjects("tutorId");
 CREATE INDEX idx_tutor_subjects_materia ON tutor_subjects(materia);
 
 -- Tabla: tutor_availability
 CREATE TABLE tutor_availability (
     id SERIAL PRIMARY KEY,
-    tutorId INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
-    diaSemana INTEGER NOT NULL CHECK (diaSemana >= 0 AND diaSemana <= 6), -- 0=Domingo, 6=Sábado
-    horaInicio TIME NOT NULL,
-    horaFin TIME NOT NULL,
+    "tutorId" INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
+    "diaSemana" INTEGER NOT NULL CHECK ("diaSemana" >= 0 AND "diaSemana" <= 6), -- 0=Domingo, 6=Sábado
+    "horaInicio" TIME NOT NULL,
+    "horaFin" TIME NOT NULL,
     activo BOOLEAN DEFAULT true,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (horaFin > horaInicio)
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK ("horaFin" > "horaInicio")
 );
 
 -- Índices para tutor_availability
-CREATE INDEX idx_tutor_availability_tutor ON tutor_availability(tutorId);
-CREATE INDEX idx_tutor_availability_dia ON tutor_availability(diaSemana);
+CREATE INDEX idx_tutor_availability_tutor ON tutor_availability("tutorId");
+CREATE INDEX idx_tutor_availability_dia ON tutor_availability("diaSemana");
 
 -- Tabla: sessions
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
-    tutorId INTEGER REFERENCES tutors(id) ON DELETE SET NULL,
-    groupId INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+    "tutorId" INTEGER REFERENCES tutors(id) ON DELETE SET NULL,
+    "groupId" INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
     fecha DATE NOT NULL,
-    horaInicio TIME NOT NULL,
-    horaFin TIME NOT NULL,
+    "horaInicio" TIME NOT NULL,
+    "horaFin" TIME NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'programada' CHECK (estado IN ('programada', 'en_curso', 'completada', 'cancelada')),
     tema VARCHAR(255),
     notas TEXT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (horaFin > horaInicio)
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK ("horaFin" > "horaInicio")
 );
 
 -- Índices para sessions
-CREATE INDEX idx_sessions_tutor ON sessions(tutorId);
-CREATE INDEX idx_sessions_group ON sessions(groupId);
+CREATE INDEX idx_sessions_tutor ON sessions("tutorId");
+CREATE INDEX idx_sessions_group ON sessions("groupId");
 CREATE INDEX idx_sessions_fecha ON sessions(fecha);
 CREATE INDEX idx_sessions_estado ON sessions(estado);
 
 -- Tabla: evaluations
 CREATE TABLE evaluations (
     id SERIAL PRIMARY KEY,
-    sessionId INTEGER REFERENCES sessions(id) ON DELETE CASCADE NOT NULL,
-    evaluatorId INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
-    tutorId INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
+    "sessionId" INTEGER REFERENCES sessions(id) ON DELETE CASCADE NOT NULL,
+    "evaluatorId" INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
+    "tutorId" INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comentario TEXT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (sessionId, evaluatorId)
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("sessionId", "evaluatorId")
 );
 
 -- Índices para evaluations
-CREATE INDEX idx_evaluations_session ON evaluations(sessionId);
-CREATE INDEX idx_evaluations_tutor ON evaluations(tutorId);
-CREATE INDEX idx_evaluations_evaluator ON evaluations(evaluatorId);
+CREATE INDEX idx_evaluations_session ON evaluations("sessionId");
+CREATE INDEX idx_evaluations_tutor ON evaluations("tutorId");
+CREATE INDEX idx_evaluations_evaluator ON evaluations("evaluatorId");
 
 -- Tabla: messages
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
-    senderId INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
-    groupId INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+    "senderId" INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
+    "groupId" INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
     content TEXT NOT NULL,
     tipo VARCHAR(20) DEFAULT 'texto' CHECK (tipo IN ('texto', 'archivo', 'sistema')),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para messages
-CREATE INDEX idx_messages_group ON messages(groupId);
-CREATE INDEX idx_messages_sender ON messages(senderId);
-CREATE INDEX idx_messages_created ON messages(createdAt);
+CREATE INDEX idx_messages_group ON messages("groupId");
+CREATE INDEX idx_messages_sender ON messages("senderId");
+CREATE INDEX idx_messages_created ON messages("createdAt");
 
 -- Tabla: files
 CREATE TABLE files (
     id SERIAL PRIMARY KEY,
-    groupId INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
-    uploaderId INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
+    "groupId" INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+    "uploaderId" INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
     nombre VARCHAR(255) NOT NULL,
-    s3Key VARCHAR(500) NOT NULL,
+    "s3Key" VARCHAR(500) NOT NULL,
     tipo VARCHAR(100),
     tamaño INTEGER NOT NULL CHECK (tamaño <= 10485760), -- 10 MB en bytes
     descripcion TEXT,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para files
-CREATE INDEX idx_files_group ON files(groupId);
-CREATE INDEX idx_files_uploader ON files(uploaderId);
+CREATE INDEX idx_files_group ON files("groupId");
+CREATE INDEX idx_files_uploader ON files("uploaderId");
 
 -- Tabla: group_invitations
 CREATE TABLE group_invitations (
     id SERIAL PRIMARY KEY,
-    groupId INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
-    invitedUserId INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    inviterId INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
+    "groupId" INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+    "invitedUserId" INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    "inviterId" INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada', 'expirada')),
-    expiresAt TIMESTAMP,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "expiresAt" TIMESTAMP,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para group_invitations
-CREATE INDEX idx_group_invitations_group ON group_invitations(groupId);
-CREATE INDEX idx_group_invitations_invited ON group_invitations(invitedUserId);
+CREATE INDEX idx_group_invitations_group ON group_invitations("groupId");
+CREATE INDEX idx_group_invitations_invited ON group_invitations("invitedUserId");
 CREATE INDEX idx_group_invitations_estado ON group_invitations(estado);
-CREATE INDEX idx_group_invitations_expires ON group_invitations(expiresAt);
+CREATE INDEX idx_group_invitations_expires ON group_invitations("expiresAt");
 
 -- Tabla: badges
 CREATE TABLE badges (
@@ -216,39 +216,39 @@ CREATE TABLE badges (
     descripcion TEXT,
     icono VARCHAR(255),
     criterio TEXT, -- Descripción de cómo obtener el badge
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla: user_badges
 CREATE TABLE user_badges (
     id SERIAL PRIMARY KEY,
-    userId INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    badgeId INTEGER REFERENCES badges(id) ON DELETE CASCADE NOT NULL,
-    earnedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (userId, badgeId)
+    "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    "badgeId" INTEGER REFERENCES badges(id) ON DELETE CASCADE NOT NULL,
+    "earnedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE ("userId", "badgeId")
 );
 
 -- Índices para user_badges
-CREATE INDEX idx_user_badges_user ON user_badges(userId);
-CREATE INDEX idx_user_badges_badge ON user_badges(badgeId);
+CREATE INDEX idx_user_badges_user ON user_badges("userId");
+CREATE INDEX idx_user_badges_badge ON user_badges("badgeId");
 
 -- Tabla: notifications
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
-    userId INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     tipo VARCHAR(50) NOT NULL, -- 'sesion_programada', 'invitacion_grupo', 'mensaje_nuevo', 'evaluacion_pendiente', etc.
     titulo VARCHAR(255) NOT NULL,
     mensaje TEXT,
     leida BOOLEAN DEFAULT false,
-    relacionId INTEGER, -- ID de la entidad relacionada (sessionId, groupId, etc.)
-    relacionTipo VARCHAR(50), -- Tipo de entidad relacionada
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "relacionId" INTEGER, -- ID de la entidad relacionada (sessionId, groupId, etc.)
+    "relacionTipo" VARCHAR(50), -- Tipo de entidad relacionada
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para notifications
-CREATE INDEX idx_notifications_user ON notifications(userId);
+CREATE INDEX idx_notifications_user ON notifications("userId");
 CREATE INDEX idx_notifications_leida ON notifications(leida);
-CREATE INDEX idx_notifications_created ON notifications(createdAt);
+CREATE INDEX idx_notifications_created ON notifications("createdAt");
 
 -- =====================================================
 -- FUNCIONES
@@ -258,7 +258,7 @@ CREATE INDEX idx_notifications_created ON notifications(createdAt);
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updatedAt = CURRENT_TIMESTAMP;
+    NEW."updatedAt" = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -272,7 +272,7 @@ BEGIN
     -- Contar miembros actuales del grupo
     SELECT COUNT(*) INTO member_count
     FROM group_members
-    WHERE groupId = NEW.groupId;
+    WHERE "groupId" = NEW."groupId";
     
     -- Si es una inserción, el count incluirá el nuevo miembro
     IF TG_OP = 'INSERT' THEN
@@ -288,7 +288,7 @@ BEGIN
     IF TG_OP = 'DELETE' THEN
         SELECT COUNT(*) INTO member_count
         FROM group_members
-        WHERE groupId = OLD.groupId;
+        WHERE "groupId" = OLD."groupId";
         
         IF member_count < 1 THEN
             RAISE EXCEPTION 'Un grupo debe tener al menos 1 miembro';
@@ -311,9 +311,9 @@ BEGIN
         tutor_id INTEGER;
     BEGIN
         IF TG_OP = 'DELETE' THEN
-            tutor_id := OLD.tutorId;
+            tutor_id := OLD."tutorId";
         ELSE
-            tutor_id := NEW.tutorId;
+            tutor_id := NEW."tutorId";
         END IF;
         
         -- Calcular promedio y total de evaluaciones
@@ -322,14 +322,14 @@ BEGIN
             COUNT(*)
         INTO avg_rating, total_evals
         FROM evaluations
-        WHERE tutorId = tutor_id;
+        WHERE "tutorId" = tutor_id;
         
         -- Actualizar la tabla tutors
         UPDATE tutors
         SET 
-            ratingPromedio = avg_rating,
-            totalEvaluaciones = total_evals,
-            updatedAt = CURRENT_TIMESTAMP
+            "ratingPromedio" = avg_rating,
+            "totalEvaluaciones" = total_evals,
+            "updatedAt" = CURRENT_TIMESTAMP
         WHERE id = tutor_id;
     END;
     
@@ -348,49 +348,49 @@ BEGIN
         tutor_id INTEGER;
     BEGIN
         IF TG_OP = 'DELETE' THEN
-            tutor_id := OLD.tutorId;
+            tutor_id := OLD."tutorId";
         ELSIF TG_OP = 'UPDATE' THEN
             -- Si cambió el tutorId, actualizar ambos
-            IF OLD.tutorId IS DISTINCT FROM NEW.tutorId THEN
+            IF OLD."tutorId" IS DISTINCT FROM NEW."tutorId" THEN
                 -- Actualizar tutor anterior
-                IF OLD.tutorId IS NOT NULL THEN
+                IF OLD."tutorId" IS NOT NULL THEN
                     SELECT COUNT(*) INTO session_count
                     FROM sessions
-                    WHERE tutorId = OLD.tutorId AND estado != 'cancelada';
+                    WHERE "tutorId" = OLD."tutorId" AND estado != 'cancelada';
                     
                     UPDATE tutors
-                    SET totalSesiones = session_count, updatedAt = CURRENT_TIMESTAMP
-                    WHERE id = OLD.tutorId;
+                    SET "totalSesiones" = session_count, "updatedAt" = CURRENT_TIMESTAMP
+                    WHERE id = OLD."tutorId";
                 END IF;
                 
                 -- Actualizar nuevo tutor
-                IF NEW.tutorId IS NOT NULL THEN
+                IF NEW."tutorId" IS NOT NULL THEN
                     SELECT COUNT(*) INTO session_count
                     FROM sessions
-                    WHERE tutorId = NEW.tutorId AND estado != 'cancelada';
+                    WHERE "tutorId" = NEW."tutorId" AND estado != 'cancelada';
                     
                     UPDATE tutors
-                    SET totalSesiones = session_count, updatedAt = CURRENT_TIMESTAMP
-                    WHERE id = NEW.tutorId;
+                    SET "totalSesiones" = session_count, "updatedAt" = CURRENT_TIMESTAMP
+                    WHERE id = NEW."tutorId";
                 END IF;
                 
                 RETURN NEW;
             END IF;
-            tutor_id := NEW.tutorId;
+            tutor_id := NEW."tutorId";
         ELSE
-            tutor_id := NEW.tutorId;
+            tutor_id := NEW."tutorId";
         END IF;
         
         -- Solo contar sesiones no canceladas
         SELECT COUNT(*) INTO session_count
         FROM sessions
-        WHERE tutorId = tutor_id AND estado != 'cancelada';
+        WHERE "tutorId" = tutor_id AND estado != 'cancelada';
         
         -- Actualizar la tabla tutors
         UPDATE tutors
         SET 
-            totalSesiones = session_count,
-            updatedAt = CURRENT_TIMESTAMP
+            "totalSesiones" = session_count,
+            "updatedAt" = CURRENT_TIMESTAMP
         WHERE id = tutor_id;
     END;
     
@@ -419,11 +419,11 @@ BEGIN
     SELECT EXISTS(
         SELECT 1
         FROM tutor_availability
-        WHERE tutorId = p_tutor_id
-        AND diaSemana = dia_semana
+        WHERE "tutorId" = p_tutor_id
+        AND "diaSemana" = dia_semana
         AND activo = true
-        AND horaInicio <= p_hora_inicio
-        AND horaFin >= p_hora_fin
+        AND "horaInicio" <= p_hora_inicio
+        AND "horaFin" >= p_hora_fin
     ) INTO tiene_disponibilidad;
     
     IF NOT tiene_disponibilidad THEN
@@ -434,13 +434,13 @@ BEGIN
     SELECT EXISTS(
         SELECT 1
         FROM sessions
-        WHERE tutorId = p_tutor_id
+        WHERE "tutorId" = p_tutor_id
         AND fecha = p_fecha
         AND estado != 'cancelada'
         AND (
-            (horaInicio <= p_hora_inicio AND horaFin > p_hora_inicio) OR
-            (horaInicio < p_hora_fin AND horaFin >= p_hora_fin) OR
-            (horaInicio >= p_hora_inicio AND horaFin <= p_hora_fin)
+            ("horaInicio" <= p_hora_inicio AND "horaFin" > p_hora_inicio) OR
+            ("horaInicio" < p_hora_fin AND "horaFin" >= p_hora_fin) OR
+            ("horaInicio" >= p_hora_inicio AND "horaFin" <= p_hora_fin)
         )
     ) INTO tiene_conflicto;
     
@@ -453,10 +453,10 @@ CREATE OR REPLACE FUNCTION expire_old_invitations()
 RETURNS void AS $$
 BEGIN
     UPDATE group_invitations
-    SET estado = 'expirada', updatedAt = CURRENT_TIMESTAMP
+    SET estado = 'expirada', "updatedAt" = CURRENT_TIMESTAMP
     WHERE estado = 'pendiente'
-    AND expiresAt IS NOT NULL
-    AND expiresAt < CURRENT_TIMESTAMP;
+    AND "expiresAt" IS NOT NULL
+    AND "expiresAt" < CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -528,21 +528,21 @@ CREATE TRIGGER trigger_update_tutor_rating_delete
 CREATE TRIGGER trigger_update_tutor_session_count_insert
     AFTER INSERT ON sessions
     FOR EACH ROW
-    WHEN (NEW.tutorId IS NOT NULL)
+    WHEN (NEW."tutorId" IS NOT NULL)
     EXECUTE FUNCTION update_tutor_session_count();
 
 -- Trigger para actualizar totalSesiones cuando se actualiza una sesión
 CREATE TRIGGER trigger_update_tutor_session_count_update
     AFTER UPDATE ON sessions
     FOR EACH ROW
-    WHEN (NEW.tutorId IS NOT NULL OR OLD.tutorId IS NOT NULL)
+    WHEN (NEW."tutorId" IS NOT NULL OR OLD."tutorId" IS NOT NULL)
     EXECUTE FUNCTION update_tutor_session_count();
 
 -- Trigger para actualizar totalSesiones cuando se elimina una sesión
 CREATE TRIGGER trigger_update_tutor_session_count_delete
     AFTER DELETE ON sessions
     FOR EACH ROW
-    WHEN (OLD.tutorId IS NOT NULL)
+    WHEN (OLD."tutorId" IS NOT NULL)
     EXECUTE FUNCTION update_tutor_session_count();
 
 -- =====================================================

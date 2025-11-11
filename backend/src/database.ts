@@ -28,4 +28,25 @@ export class Database {
     public async query(query: string, params?: any[]): Promise<QueryResult> {
         return await this.client.query(query, params);
     }
+    
+    /**
+     * Inicia una transacción
+     */
+    public async beginTransaction(): Promise<void> {
+        await this.client.query('BEGIN');
+    }
+    
+    /**
+     * Confirma una transacción
+     */
+    public async commit(): Promise<void> {
+        await this.client.query('COMMIT');
+    }
+    
+    /**
+     * Revierte una transacción
+     */
+    public async rollback(): Promise<void> {
+        await this.client.query('ROLLBACK');
+    }
 }

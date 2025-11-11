@@ -72,49 +72,70 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
       });
     }
 
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(password, 10);
-    // Store in database
-    const insertQuery = `
-      INSERT INTO lead (name, institution, "contactPhone", phone)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id;
-    `;
-    const result = await database.query(insertQuery, [
-      name,
-      institution,
-      contactPhone,
-      phone
-    ]);
-    const insertPasswordQuery = `
-      INSERT INTO "leadPassword" ("idLead", "password")
-      VALUES ($1, $2)
-      RETURNING id;
-    `;
-    const resultPassword = await database.query(insertPasswordQuery, [result.rows[0].id, hashedPassword]);
+    // Iniciar transacción
+    await database.beginTransaction();
 
-    const insertCodeLeadQuery = `
-      INSERT INTO "codeLead" ("idLead", code)
-      VALUES ($1, $2)
-      RETURNING id;
-    `;
-    const code = Math.floor(10000 + Math.random() * 89999) + '';
-    const resultCode = await database.query(insertCodeLeadQuery, [result.rows[0].id, code]);
+    try {
+      // Hash password before storing
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // 1. Insertar nuevo lead
+      const insertQuery = `
+        INSERT INTO lead (name, institution, "contactPhone", phone)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id;
+      `;
+      const result = await database.query(insertQuery, [
+        name,
+        institution,
+        contactPhone,
+        phone
+      ]);
 
-    if (resultPassword.rows.length === 0 || resultCode.rows.length === 0) {
-      return res.status(500).json({
-        status: 'error',
-        message: 'Failed to save password or code',
+      const leadId = result.rows[0].id;
+
+      // 2. Insertar password del lead
+      const insertPasswordQuery = `
+        INSERT INTO "leadPassword" ("idLead", "password")
+        VALUES ($1, $2)
+        RETURNING id;
+      `;
+      const resultPassword = await database.query(insertPasswordQuery, [leadId, hashedPassword]);
+
+      // 3. Insertar código del lead
+      const insertCodeLeadQuery = `
+        INSERT INTO "codeLead" ("idLead", code)
+        VALUES ($1, $2)
+        RETURNING id;
+      `;
+      const code = Math.floor(10000 + Math.random() * 89999) + '';
+      const resultCode = await database.query(insertCodeLeadQuery, [leadId, code]);
+
+      // Validar que todas las inserciones fueron exitosas
+      if (resultPassword.rows.length === 0 || resultCode.rows.length === 0) {
+        await database.rollback();
+        return res.status(500).json({
+          status: 'error',
+          message: 'Failed to save password or code',
+        });
+      }
+
+      // Confirmar transacción
+      await database.commit();
+      
+      console.log('Lead saved to database:', result.rows[0]);
+
+      // TODO: enviar el WA
+      res.status(200).json({
+        status: 'ok',
+        message: 'Code sent successfully',
+        leadId: leadId,
       });
+    } catch (transactionError) {
+      // Revertir transacción en caso de error
+      await database.rollback();
+      throw transactionError;
     }
-    console.log('Lead saved to database:', result.rows[0]);
-
-    // TODO: enviar el WA
-    res.status(200).json({
-      status: 'ok',
-      message: 'Code sent successfully',
-      leadId: result.rows[0].id,
-    });
   } catch (error) {
     console.error('Error processing request:', error);
     res.status(500).json({

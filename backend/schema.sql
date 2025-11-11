@@ -16,8 +16,7 @@ CREATE TABLE IF NOT EXISTS student (
     semester INT NOT NULL,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Relaciona al asesor con un estudiante existente
+--advisor
 CREATE TABLE IF NOT EXISTS advisor (
     id SERIAL PRIMARY KEY,
     id_student INT NOT NULL UNIQUE,

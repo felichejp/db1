@@ -9,7 +9,7 @@ Gestión de usuarios y roles
 - Perfil de usuario (grado, materias, calificaciones)
 
 Sistema de grupos
-- Creación y gestión de grupos. minimo 1, máximo 5
+- Creación y gestión de grupos. minimo 1, máximo 5 estudiantes
 - Asignación de profesor responsable de cada grupo
 - invitaciones a grupo
 - Estado del grupo (activo, inactivo, completado)
@@ -30,7 +30,7 @@ Calendario y programación
 Comunicación
 - Mensajería entre tutores y grupos
 - Foros o chat dentro de cada grupo
-- Notificaciones (email o in-app websocket Socket.IO)
+- Notificaciones (email o in-app websocket Socket.IO, WA)
 
 Seguimiento y evaluación
 - Registro de sesiones realizadas
@@ -256,7 +256,7 @@ Optimizaciones:
 2.- Backend
 
 Tecnologías:
-- Lenguaje: Node.js
+- Lenguaje: Node.js + TypeScript (ES2020+)
 - Base de datos: PostgreSQL
 - Framework: Express.js
 
@@ -271,77 +271,85 @@ Bibliotecas:
 - bcrypt: Hash de contraseñas
 - socket.io: WebSocket para notificaciones en tiempo real
 - cors: Configuración CORS
-- Jest: Testing
+- Jest + ts-jest: Testing en TypeScript
+- typescript, ts-node-dev: Tooling TypeScript para desarrollo
+- Tipos (@types): @types/express, @types/cors, @types/jsonwebtoken, @types/bcrypt, @types/node, @types/jest, @types/express-validator
 
 Estructura de carpetas:
 ```
 backend/
-├── server.js (punto de entrada)
+├── server.ts (punto de entrada)
 ├── config/
-│   ├── database.js (configuración de PostgreSQL)
-│   ├── socket.js (configuración Socket.IO)
-│   └── s3.js (configuración AWS S3)
+│   ├── database.ts (configuración de PostgreSQL)
+│   ├── socket.ts (configuración Socket.IO)
+│   └── s3.ts (configuración AWS S3)
 ├── routes/
-│   ├── auth.js (autenticación)
-│   ├── users.js
-│   ├── groups.js
-│   ├── tutors.js
-│   ├── sessions.js
-│   ├── messages.js
-│   ├── files.js
-│   ├── evaluations.js
-│   ├── notifications.js
-│   └── admin.js
+│   ├── auth.ts (autenticación)
+│   ├── users.ts
+│   ├── groups.ts
+│   ├── tutors.ts
+│   ├── sessions.ts
+│   ├── messages.ts
+│   ├── files.ts
+│   ├── evaluations.ts
+│   ├── notifications.ts
+│   └── admin.ts
 ├── controllers/
-│   ├── authController.js
-│   ├── userController.js
-│   ├── groupController.js
-│   ├── tutorController.js
-│   ├── sessionController.js
-│   ├── messageController.js
-│   ├── fileController.js
-│   ├── evaluationController.js
-│   ├── notificationController.js
-│   └── adminController.js
+│   ├── authController.ts
+│   ├── userController.ts
+│   ├── groupController.ts
+│   ├── tutorController.ts
+│   ├── sessionController.ts
+│   ├── messageController.ts
+│   ├── fileController.ts
+│   ├── evaluationController.ts
+│   ├── notificationController.ts
+│   └── adminController.ts
 ├── middleware/
-│   ├── auth.js (authenticateToken, authorizeRole)
-│   ├── validate.js (validaciones con express-validator)
-│   ├── errorHandler.js (manejo centralizado de errores)
-│   ├── rateLimiter.js (configuración rate limiting)
-│   └── upload.js (middleware para upload de archivos)
+│   ├── auth.ts (authenticateToken, authorizeRole)
+│   ├── validate.ts (validaciones con express-validator)
+│   ├── errorHandler.ts (manejo centralizado de errores)
+│   ├── rateLimiter.ts (configuración rate limiting)
+│   └── upload.ts (middleware para upload de archivos)
 ├── utils/
-│   ├── jwt.js (helpers para JWT)
-│   ├── password.js (helpers para bcrypt)
-│   ├── response.js (formato de respuestas)
-│   ├── logger.js (logging)
-│   └── matching.js (algoritmo de emparejamiento)
+│   ├── jwt.ts (helpers para JWT)
+│   ├── password.ts (helpers para bcrypt)
+│   ├── response.ts (formato de respuestas)
+│   ├── logger.ts (logging)
+│   └── matching.ts (algoritmo de emparejamiento)
 ├── models/
-│   └── (opcional: modelos de datos si se usa ORM)
+│   └── (opcional: modelos de datos si se usa ORM) .ts
 ├── tests/
-│   ├── unit/
-│   └── integration/
+│   ├── unit/  (.test.ts)
+│   └── integration/  (.test.ts)
 ├── .env.example
+├── tsconfig.json
+├── jest.config.ts
+├── types/ (tipos y definiciones globales)
+│   └── global.d.ts
+├── .eslintrc.cjs (opcional, ESLint con @typescript-eslint)
+├── .prettierrc (opcional)
 └── package.json
 ```
 
 Estructura de respuestas API:
 
 Respuesta de éxito:
-```javascript
-{
-  success: true,
-  data: { ... }, // Datos de respuesta
-  message?: string // Mensaje opcional
+```ts
+export interface ApiSuccess<T = unknown> {
+  success: true;
+  data: T;
+  message?: string;
 }
 ```
 
 Respuesta de error:
-```javascript
-{
-  success: false,
-  code: number, // Código de error HTTP
-  message: string, // Mensaje de error
-  details?: any // Detalles adicionales (opcional)
+```ts
+export interface ApiError {
+  success: false;
+  code: number;
+  message: string;
+  details?: unknown;
 }
 ```
 
@@ -547,6 +555,7 @@ Autenticación:
 Bibliotecas necesarias:
 - jsonwebtoken: Para crear y verificar tokens JWT
 - bcrypt: Para hashear contraseñas
+ - @types/jsonwebtoken, @types/bcrypt: Tipos TypeScript
 
 Estructura del token JWT:
 - Payload contiene: { userId, role, email, iat, exp }
@@ -554,7 +563,7 @@ Estructura del token JWT:
 - Secret: Variable de entorno JWT_SECRET (mínimo 32 caracteres)
 
 Middleware de autenticación:
-- authenticateToken: Middleware que verifica el JWT en el header Authorization (formato: "Bearer <token>")
+- authenticateToken: Middleware que verifica el JWT en el header Authorization (formato: "Bearer <token>") usando tipos de Express (`Request`, `Response`, `NextFunction`)
   * Si el token es válido: agrega req.user con { userId, role, email }
   * Si el token es inválido o expirado: retorna 401 Unauthorized
 - authorizeRole: Middleware que verifica que el usuario tenga el rol requerido
@@ -581,7 +590,7 @@ Endpoints de autenticación:
 Otras medidas de seguridad:
 - Validación de datos: express-validator en todos los endpoints
 - CORS: Configurado para permitir solo el origen del frontend
-- Rate limit: express-rate-limit (10 requests por 10 minutos por IP)
+- Rate limit: express-rate-limit (100 requests por 10 minutos por IP)
 - Variables de entorno: JWT_SECRET, DB_*, CORS_ORIGIN, PORT
 
 Endpoints del Sistema:
@@ -686,9 +695,10 @@ Variables de entorno requeridas (.env):
 - AWS_REGION=us-east-1 (región de S3)
 - S3_BUCKET_NAME=nombre_bucket
 - SOCKET_IO_PATH=/socket.io (path para Socket.IO)
+ - TS_NODE_TRANSPILE_ONLY=true (opcional, acelerar ts-node-dev en desarrollo)
 
 Socket.IO (Backend):
-- Configuración: En config/socket.js
+- Configuración: En config/socket.ts
 - Autenticación: Middleware para verificar JWT al conectar
 - Namespaces: Usar namespace por defecto '/'
 - Eventos emitidos desde servidor:
@@ -709,7 +719,7 @@ Socket.IO (Backend):
 
 Configuración S3:
 - Biblioteca: AWS SDK v3 (@aws-sdk/client-s3, @aws-sdk/s3-request-presigner)
-- Configuración: En config/s3.js
+- Configuración: En config/s3.ts
 - Bucket: Variable de entorno S3_BUCKET_NAME
 - Estructura de carpetas:
   * groups/{groupId}/files/{timestamp}_{filename}
@@ -724,7 +734,7 @@ Configuración S3:
   * GET /api/files/:id/download - Genera presigned URL para download
 
 Manejo de errores:
-- Middleware centralizado: errorHandler.js
+- Middleware centralizado: errorHandler.ts
 - Tipos de errores:
   * ValidationError (400): Errores de validación
   * AuthenticationError (401): No autenticado
@@ -732,7 +742,7 @@ Manejo de errores:
   * NotFoundError (404): Recurso no encontrado
   * DatabaseError (500): Error de base de datos
   * ServerError (500): Error interno del servidor
-- Logging: Registrar todos los errores con logger.js
+- Logging: Registrar todos los errores con logger.ts
 - Respuesta: Formato estándar de error definido arriba
 
 Logging:
@@ -741,27 +751,30 @@ Logging:
 - Formato: JSON en producción, texto en desarrollo
 - Archivos: logs/error.log, logs/combined.log
 - Rotación: Por tamaño o fecha
+ - Tipos: Crear `Logger` tipado y helpers en `utils/logger.ts`
 
 Testing:
-- Framework: Jest
-- Estructura: tests/unit/ y tests/integration/
+- Framework: Jest + ts-jest
+- Estructura: tests/unit/ y tests/integration/ (.test.ts)
 - Cobertura objetivo: 70% mínimo
 - Tests a crear:
   * Unitarios: Funciones utilitarias, middleware, helpers
   * Integración: Endpoints principales, flujos completos
 - Mocking: Base de datos (pg mock), S3 (mock AWS SDK)
+ - Configuración: `jest.config.ts` con preset ts-jest y testEnvironment 'node'
 
 Convenciones de código:
 - camelCase para variables y funciones
 - PascalCase para clases
 - Nombres descriptivos
-- Comentarios JSDoc para funciones públicas
+- Comentarios TSDoc para funciones públicas
 - Separación de responsabilidades
 - Una función, una responsabilidad
+ - Tipado explícito en APIs públicas; evitar `any` en producción
 
 Algoritmo de Emparejamiento (matching):
-- Ubicación: utils/matching.js
-- Función: matchTutorToGroup(groupId, materia, fecha, horaInicio, horaFin)
+- Ubicación: utils/matching.ts
+- Función: matchTutorToGroup(groupId: number, materia: string, fecha: string, horaInicio: string, horaFin: string): Promise<Array<TutorMatch>>
 - Criterios de matching (con pesos):
   * Grado del tutor (peso: 30%): Mismo grado = 100 puntos, grado superior = 80 puntos
   * Materia de especialidad (peso: 25%): Coincide materia = 100 puntos
@@ -798,12 +811,12 @@ Desarrollo:
   * Formato estándar: { success: boolean, data?: any, code?: number, message?: string }
   * Códigos HTTP estándar
 - Documentación:
-  * Comentarios JSDoc en funciones públicas
+  * Comentarios TSDoc en funciones públicas
   * README con instrucciones de instalación y uso
   * Documentación de API (opcional: Swagger/OpenAPI)
 
 Nota importante:
 - No se implementan las funciones de acceso a la base de datos, solo los endpoints
 - Los endpoints deben estar listos para recibir las funciones de acceso a BD cuando se implementen
-- La lógica de negocio va en los controllers
-- Las queries SQL van en funciones separadas (no en los controllers)
+- La lógica de negocio va en los controllers (archivos .ts con tipado)
+- Las queries SQL van en funciones separadas (no en los controllers) y con tipos para entradas/salidas

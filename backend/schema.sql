@@ -10,3 +10,18 @@ CREATE TABLE IF NOT EXISTS codeLead (
     code VARCHAR(255) NOT NULL,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE student (
+  id INT PRIMARY KEY,
+  name VARCHAR(100),
+);
+
+CREATE TABLE advisor (
+  id INT PRIMARY KEY,
+  name VARCHAR(100),
+);
+
+CREATE TABLE class (
+  id INT PRIMARY KEY,
+  course_name VARCHAR(100),
+);

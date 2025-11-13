@@ -364,138 +364,146 @@ Códigos HTTP estándar:
 
 Estructura de Base de Datos (PostgreSQL):
 
+IMPORTANTE - Nombres de Columnas:
+- Los nombres de columnas con camelCase (passwordHash, createdAt, updatedAt, profesorId, groupId, userId, etc.) DEBEN usar comillas dobles en PostgreSQL para preservar el case: "passwordHash", "createdAt", "updatedAt"
+- Sin comillas, PostgreSQL convierte automáticamente a minúsculas (passwordhash, createdat, etc.)
+- El código TypeScript usa comillas dobles en las queries SQL, por lo que el esquema SQL debe coincidir
+
 Tabla: users
 - id: SERIAL PRIMARY KEY
 - email: VARCHAR(255) UNIQUE NOT NULL
-- passwordHash: VARCHAR(255) NOT NULL
+- "passwordHash": VARCHAR(255) NOT NULL (con comillas dobles)
 - nombre: VARCHAR(255) NOT NULL
 - role: VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante'))
 - grado: INTEGER
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_email (email)
-- INDEX idx_role (role)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- "updatedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_users_email ON users(email)
+- INDEX idx_users_role ON users(role)
 
 Tabla: groups
 - id: SERIAL PRIMARY KEY
 - nombre: VARCHAR(255) NOT NULL
-- profesorId: INTEGER REFERENCES users(id) ON DELETE SET NULL
+- "profesorId": INTEGER REFERENCES users(id) ON DELETE SET NULL (con comillas dobles)
 - estado: VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo', 'completado'))
 - descripcion: TEXT
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- "updatedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
 - CONSTRAINT check_min_members CHECK (validar mínimo 1 miembro en triggers)
 - CONSTRAINT check_max_members CHECK (validar máximo 5 miembros en triggers)
-- INDEX idx_profesor (profesorId)
-- INDEX idx_estado (estado)
+- INDEX idx_groups_profesor ON groups("profesorId")
+- INDEX idx_groups_estado ON groups(estado)
 
 Tabla: group_members
 - id: SERIAL PRIMARY KEY
-- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
-- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
-- joinedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- UNIQUE (groupId, userId)
-- INDEX idx_group (groupId)
-- INDEX idx_user (userId)
+- "groupId": INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "userId": INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "joinedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- UNIQUE ("groupId", "userId")
+- INDEX idx_group_members_group ON group_members("groupId")
+- INDEX idx_group_members_user ON group_members("userId")
 
 Tabla: tutors
 - id: SERIAL PRIMARY KEY
-- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL
-- ratingPromedio: DECIMAL(3,2) DEFAULT 0.00 CHECK (ratingPromedio >= 0 AND ratingPromedio <= 5)
-- totalSesiones: INTEGER DEFAULT 0
-- totalEvaluaciones: INTEGER DEFAULT 0
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_user (userId)
-- INDEX idx_rating (ratingPromedio)
+- "userId": INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL (con comillas dobles)
+- "ratingPromedio": DECIMAL(3,2) DEFAULT 0.00 CHECK ("ratingPromedio" >= 0 AND "ratingPromedio" <= 5) (con comillas dobles)
+- "totalSesiones": INTEGER DEFAULT 0 (con comillas dobles)
+- "totalEvaluaciones": INTEGER DEFAULT 0 (con comillas dobles)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- "updatedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_tutors_user ON tutors("userId")
+- INDEX idx_tutors_rating ON tutors("ratingPromedio")
 
 Tabla: tutor_subjects
 - id: SERIAL PRIMARY KEY
-- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
+- "tutorId": INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
 - materia: VARCHAR(100) NOT NULL
 - nivel: VARCHAR(50)
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- UNIQUE (tutorId, materia)
-- INDEX idx_tutor (tutorId)
-- INDEX idx_materia (materia)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- UNIQUE ("tutorId", materia)
+- INDEX idx_tutor_subjects_tutor ON tutor_subjects("tutorId")
+- INDEX idx_tutor_subjects_materia ON tutor_subjects(materia)
 
 Tabla: tutor_availability
 - id: SERIAL PRIMARY KEY
-- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
-- diaSemana: INTEGER NOT NULL CHECK (diaSemana >= 0 AND diaSemana <= 6) -- 0=Domingo, 6=Sábado
-- horaInicio: TIME NOT NULL
-- horaFin: TIME NOT NULL
+- "tutorId": INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "diaSemana": INTEGER NOT NULL CHECK ("diaSemana" >= 0 AND "diaSemana" <= 6) -- 0=Domingo, 6=Sábado (con comillas dobles)
+- "horaInicio": TIME NOT NULL (con comillas dobles)
+- "horaFin": TIME NOT NULL (con comillas dobles)
 - activo: BOOLEAN DEFAULT true
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_tutor (tutorId)
-- INDEX idx_dia (diaSemana)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- CHECK ("horaFin" > "horaInicio")
+- INDEX idx_tutor_availability_tutor ON tutor_availability("tutorId")
+- INDEX idx_tutor_availability_dia ON tutor_availability("diaSemana")
 
 Tabla: sessions
 - id: SERIAL PRIMARY KEY
-- tutorId: INTEGER REFERENCES tutors(id) ON DELETE SET NULL
-- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- "tutorId": INTEGER REFERENCES tutors(id) ON DELETE SET NULL (con comillas dobles)
+- "groupId": INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
 - fecha: DATE NOT NULL
-- horaInicio: TIME NOT NULL
-- horaFin: TIME NOT NULL
+- "horaInicio": TIME NOT NULL (con comillas dobles)
+- "horaFin": TIME NOT NULL (con comillas dobles)
 - estado: VARCHAR(20) NOT NULL DEFAULT 'programada' CHECK (estado IN ('programada', 'en_curso', 'completada', 'cancelada'))
 - tema: VARCHAR(255)
 - notas: TEXT
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_tutor (tutorId)
-- INDEX idx_group (groupId)
-- INDEX idx_fecha (fecha)
-- INDEX idx_estado (estado)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- "updatedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- CHECK ("horaFin" > "horaInicio")
+- INDEX idx_sessions_tutor ON sessions("tutorId")
+- INDEX idx_sessions_group ON sessions("groupId")
+- INDEX idx_sessions_fecha ON sessions(fecha)
+- INDEX idx_sessions_estado ON sessions(estado)
 
 Tabla: evaluations
 - id: SERIAL PRIMARY KEY
-- sessionId: INTEGER REFERENCES sessions(id) ON DELETE CASCADE NOT NULL
-- evaluatorId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
-- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
+- "sessionId": INTEGER REFERENCES sessions(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "evaluatorId": INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL (con comillas dobles)
+- "tutorId": INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
 - rating: INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
 - comentario: TEXT
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- UNIQUE (sessionId, evaluatorId)
-- INDEX idx_session (sessionId)
-- INDEX idx_tutor (tutorId)
-- INDEX idx_evaluator (evaluatorId)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- UNIQUE ("sessionId", "evaluatorId")
+- INDEX idx_evaluations_session ON evaluations("sessionId")
+- INDEX idx_evaluations_tutor ON evaluations("tutorId")
+- INDEX idx_evaluations_evaluator ON evaluations("evaluatorId")
 
 Tabla: messages
 - id: SERIAL PRIMARY KEY
-- senderId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
-- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- "senderId": INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL (con comillas dobles)
+- "groupId": INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
 - content: TEXT NOT NULL
 - tipo: VARCHAR(20) DEFAULT 'texto' CHECK (tipo IN ('texto', 'archivo', 'sistema'))
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_group (groupId)
-- INDEX idx_sender (senderId)
-- INDEX idx_created (createdAt)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_messages_group ON messages("groupId")
+- INDEX idx_messages_sender ON messages("senderId")
+- INDEX idx_messages_created ON messages("createdAt")
 
 Tabla: files
 - id: SERIAL PRIMARY KEY
-- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
-- uploaderId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- "groupId": INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "uploaderId": INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL (con comillas dobles)
 - nombre: VARCHAR(255) NOT NULL
-- s3Key: VARCHAR(500) NOT NULL
+- "s3Key": VARCHAR(500) NOT NULL (con comillas dobles)
 - tipo: VARCHAR(100)
 - tamaño: INTEGER NOT NULL CHECK (tamaño <= 10485760) -- 10 MB en bytes
 - descripcion: TEXT
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_group (groupId)
-- INDEX idx_uploader (uploaderId)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_files_group ON files("groupId")
+- INDEX idx_files_uploader ON files("uploaderId")
 
 Tabla: group_invitations
 - id: SERIAL PRIMARY KEY
-- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
-- invitedUserId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
-- inviterId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- "groupId": INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "invitedUserId": INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "inviterId": INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL (con comillas dobles)
 - estado: VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada', 'expirada'))
-- expiresAt: TIMESTAMP
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_group (groupId)
-- INDEX idx_invited (invitedUserId)
-- INDEX idx_estado (estado)
+- "expiresAt": TIMESTAMP (con comillas dobles)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- "updatedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_group_invitations_group ON group_invitations("groupId")
+- INDEX idx_group_invitations_invited ON group_invitations("invitedUserId")
+- INDEX idx_group_invitations_estado ON group_invitations(estado)
+- INDEX idx_group_invitations_expires ON group_invitations("expiresAt")
 
 Tabla: badges
 - id: SERIAL PRIMARY KEY
@@ -503,37 +511,38 @@ Tabla: badges
 - descripcion: TEXT
 - icono: VARCHAR(255)
 - criterio: TEXT -- Descripción de cómo obtener el badge
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
 
 Tabla: user_badges
 - id: SERIAL PRIMARY KEY
-- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
-- badgeId: INTEGER REFERENCES badges(id) ON DELETE CASCADE NOT NULL
-- earnedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- UNIQUE (userId, badgeId)
-- INDEX idx_user (userId)
-- INDEX idx_badge (badgeId)
+- "userId": INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "badgeId": INTEGER REFERENCES badges(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
+- "earnedAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- UNIQUE ("userId", "badgeId")
+- INDEX idx_user_badges_user ON user_badges("userId")
+- INDEX idx_user_badges_badge ON user_badges("badgeId")
 
 Tabla: notifications
 - id: SERIAL PRIMARY KEY
-- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
+- "userId": INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL (con comillas dobles)
 - tipo: VARCHAR(50) NOT NULL -- 'sesion_programada', 'invitacion_grupo', 'mensaje_nuevo', 'evaluacion_pendiente', etc.
 - titulo: VARCHAR(255) NOT NULL
 - mensaje: TEXT
 - leida: BOOLEAN DEFAULT false
-- relacionId: INTEGER -- ID de la entidad relacionada (sessionId, groupId, etc.)
-- relacionTipo: VARCHAR(50) -- Tipo de entidad relacionada
-- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- INDEX idx_user (userId)
-- INDEX idx_leida (leida)
-- INDEX idx_created (createdAt)
+- "relacionId": INTEGER -- ID de la entidad relacionada (sessionId, groupId, etc.) (con comillas dobles)
+- "relacionTipo": VARCHAR(50) -- Tipo de entidad relacionada (con comillas dobles)
+- "createdAt": TIMESTAMP DEFAULT CURRENT_TIMESTAMP (con comillas dobles)
+- INDEX idx_notifications_user ON notifications("userId")
+- INDEX idx_notifications_leida ON notifications(leida)
+- INDEX idx_notifications_created ON notifications("createdAt")
 
 Funciones y Triggers importantes:
-- Función para validar límite de miembros en grupos (mínimo 1, máximo 5)
-- Trigger para actualizar ratingPromedio en tutors cuando se crea una evaluación
-- Trigger para actualizar totalSesiones y totalEvaluaciones en tutors
-- Trigger para actualizar updatedAt automáticamente
-- Función para calcular disponibilidad de tutores basada en tutor_availability y sessions
+- Función para validar límite de miembros en grupos (mínimo 1, máximo 5) - usa "groupId" y "userId" con comillas
+- Trigger para actualizar "ratingPromedio" en tutors cuando se crea una evaluación - usa "tutorId", "ratingPromedio", "totalEvaluaciones", "updatedAt" con comillas
+- Trigger para actualizar "totalSesiones" y "totalEvaluaciones" en tutors - usa "tutorId", "totalSesiones", "updatedAt" con comillas
+- Trigger para actualizar "updatedAt" automáticamente - usa "updatedAt" con comillas
+- Función para calcular disponibilidad de tutores basada en tutor_availability y sessions - usa "tutorId", "diaSemana", "horaInicio", "horaFin" con comillas
+- Todas las funciones y triggers deben usar comillas dobles al referenciar columnas con camelCase
 
 Script SQL completo:
 - Archivo: database_schema.sql

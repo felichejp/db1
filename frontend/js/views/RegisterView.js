@@ -98,3 +98,4 @@ class RegisterView {
 
 export default new RegisterView();
 
+

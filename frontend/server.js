@@ -64,3 +64,4 @@ server.listen(PORT, () => {
   console.log(`📁 Sirviendo archivos desde: ${__dirname}`);
 });
 
+

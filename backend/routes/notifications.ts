@@ -13,3 +13,4 @@ router.delete('/:id', authenticateToken, validateId, notificationController.dele
 
 export default router;
 
+

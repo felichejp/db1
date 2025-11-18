@@ -13,3 +13,4 @@ router.get('/:id/profile', authenticateToken, validateId, userController.getUser
 
 export default router;
 
+

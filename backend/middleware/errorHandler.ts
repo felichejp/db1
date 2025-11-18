@@ -90,3 +90,4 @@ export function errorHandler(
   sendError(res, 'Error interno del servidor', 500);
 }
 
+

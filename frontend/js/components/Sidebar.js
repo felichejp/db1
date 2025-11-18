@@ -86,3 +86,4 @@ class Sidebar {
 
 export default new Sidebar();
 
+

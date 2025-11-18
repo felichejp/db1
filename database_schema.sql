@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS tutor_subjects CASCADE;
 DROP TABLE IF EXISTS tutors CASCADE;
 DROP TABLE IF EXISTS group_members CASCADE;
 DROP TABLE IF EXISTS groups CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+--DROP TABLE IF EXISTS users CASCADE;
 
 -- Eliminar funciones y triggers existentes
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;

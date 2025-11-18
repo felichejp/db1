@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asesorías entre Pares</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header se renderiza dinámicamente -->
+        <div id="header-container"></div>
+        
+        <!-- Sidebar se renderiza dinámicamente -->
+        <div id="sidebar-container"></div>
+        
+        <!-- Contenido principal -->
+        <main id="main-content">
+            <div id="view-container">
+                <!-- Las vistas se renderizan aquí -->
+            </div>
+        </main>
+        
+        <!-- Loading overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

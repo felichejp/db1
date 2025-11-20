@@ -38,7 +38,7 @@ CREATE TABLE users (
     "passwordHash" VARCHAR(255) NOT NULL,
     nombre VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante')),
-    grado INTEGER,
+    grado INTEGER CHECK (grado IS NULL OR (grado >= 1 AND grado <= 10)),
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

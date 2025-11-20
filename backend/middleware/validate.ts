@@ -1,4 +1,4 @@
-import { body, param, query, ValidationChain } from 'express-validator';
+import { body, param } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import { sendError } from '../utils/response';
@@ -27,7 +27,7 @@ export const validateRegister = [
   body('role')
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+  body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado debe ser entre 1 y 10'),
   validate
 ];
 
@@ -81,6 +81,15 @@ export const validateCreateEvaluation = [
     .isInt({ min: 1, max: 5 })
     .withMessage('Rating debe ser entre 1 y 5'),
   body('comentario').optional().isString(),
+  validate
+];
+
+/**
+ * Validaciones para actualizar usuario
+ */
+export const validateUpdateUser = [
+  body('nombre').optional().notEmpty().withMessage('El nombre no puede estar vacío'),
+  body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado debe ser entre 1 y 10'),
   validate
 ];
 

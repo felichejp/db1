@@ -41,7 +41,7 @@ class RegisterView {
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <input type="number" id="reg-grado" class="form-input" min="1" max="10">
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
           </form>

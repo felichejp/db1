@@ -6,6 +6,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
+//modulo 6
+import evaluacionesRoutes from "./routes/evaluaciones";
+import estadisticasRoutes from "./routes/estadisticas";
+import badgesRoutes from "./routes/badges";
+
+
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3000;
 
@@ -32,6 +38,13 @@ interface Lead {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+//modulo 6
+
+app.use("/api/evaluaciones", evaluacionesRoutes);
+app.use("/api/estadisticas", estadisticasRoutes);
+app.use("/api/badges", badgesRoutes);
+
 
 // Health endpoint
 app.get('/health', (req: Request, res: Response) => {

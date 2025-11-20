@@ -10,7 +10,10 @@ import { query } from '../config/database';
  */
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, nombre, role, grado } = req.body;
+    const { email, password, nombre, grado } = req.body;
+
+    // Forzar siempre rol Estudiante para el registro público
+    const role = 'Estudiante';
 
     // Verificar si el email ya existe
     const existingUser = await query(

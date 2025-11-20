@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8081;
 const MIME_TYPES = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -62,6 +62,22 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`✅ Servidor frontend corriendo en http://localhost:${PORT}`);
   console.log(`📁 Sirviendo archivos desde: ${__dirname}`);
+});
+
+// Manejar errores del servidor
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: El puerto ${PORT} ya está en uso.`);
+    console.error(`\n💡 Soluciones:`);
+    console.error(`   1. Detener el proceso que está usando el puerto ${PORT}`);
+    console.error(`   2. Usar un puerto diferente: PORT=8081 node server.js`);
+    console.error(`   3. En Windows, puedes encontrar el proceso con: netstat -ano | findstr :${PORT}`);
+    console.error(`   4. Luego detenerlo con: taskkill /PID <PID> /F\n`);
+    process.exit(1);
+  } else {
+    console.error(`\n❌ Error del servidor:`, error);
+    process.exit(1);
+  }
 });
 
 

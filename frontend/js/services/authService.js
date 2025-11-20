@@ -52,7 +52,8 @@ class AuthService {
     if (!token) return false;
 
     try {
-      const response = await axios.get('/api/auth/verify', {
+      const apiBaseUrl = window.API_BASE_URL || 'http://localhost:3000';
+      const response = await axios.get(`${apiBaseUrl}/api/auth/verify`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

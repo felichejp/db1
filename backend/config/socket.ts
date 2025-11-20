@@ -15,7 +15,7 @@ export function initializeSocket(server: HttpServer): Server {
   io = new Server(server, {
     path: socketPath,
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+      origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
       methods: ['GET', 'POST']
     }
   });

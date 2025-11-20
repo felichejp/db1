@@ -31,17 +31,14 @@ class RegisterView {
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-role">Rol</label>
-              <select id="reg-role" class="form-select" required>
-                <option value="">Selecciona un rol</option>
-                <option value="Estudiante">Estudiante</option>
-                <option value="Tutor">Tutor</option>
-                <option value="Profesor">Profesor</option>
-                <option value="Admin">Admin</option>
+              <select id="reg-role" class="form-select" disabled>
+                <option value="Estudiante" selected>Estudiante</option>
               </select>
+              <small class="form-text text-muted">El registro público solo está disponible para rol Estudiante.</small>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <input type="number" id="reg-grado" class="form-input" min="1" max="10">
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
           </form>
@@ -60,7 +57,8 @@ class RegisterView {
         email: document.getElementById('reg-email').value,
         password: document.getElementById('reg-password').value,
         nombre: document.getElementById('reg-nombre').value,
-        role: document.getElementById('reg-role').value,
+        // Forzamos el rol Estudiante en el registro público
+        role: 'Estudiante',
         grado: document.getElementById('reg-grado').value || null
       };
 
@@ -68,7 +66,9 @@ class RegisterView {
         email: { required: true, email: true },
         password: { required: true, password: true },
         nombre: { required: true },
-        role: { required: true }
+        role: { required: true },
+        // grado es opcional, pero si se llena debe estar entre 1 y 10
+        grado: { number: true, min: 1, max: 10 }
       });
 
       if (!validation.isValid) {

@@ -24,7 +24,7 @@ import adminRoutes from './routes/admin';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8080';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8081';
 
 // Middleware global
 app.use(cors({

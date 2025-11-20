@@ -25,9 +25,9 @@ export const validateRegister = [
     .withMessage('La contraseña debe tener al menos 8 caracteres'),
   body('nombre').notEmpty().withMessage('El nombre es requerido'),
   body('role')
-    .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
-    .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+    .equals('Estudiante')
+    .withMessage('Solo se puede registrar como Estudiante'),
+  body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado inválido (debe ser entre 1 y 10)'),
   validate
 ];
 

@@ -32,16 +32,12 @@ class RegisterView {
             <div class="form-group">
               <label class="form-label" for="reg-role">Rol</label>
               <select id="reg-role" class="form-select" required>
-                <option value="">Selecciona un rol</option>
                 <option value="Estudiante">Estudiante</option>
-                <option value="Tutor">Tutor</option>
-                <option value="Profesor">Profesor</option>
-                <option value="Admin">Admin</option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <input type="number" id="reg-grado" class="form-input" min="1" max="10">
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
           </form>
@@ -56,12 +52,27 @@ class RegisterView {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const roleValue = document.getElementById('reg-role').value;
+      const gradoValue = document.getElementById('reg-grado').value;
+
+      // Validar que el rol sea Estudiante
+      if (roleValue !== 'Estudiante') {
+        Notification.error('Solo puedes registrarte como estudiante');
+        return;
+      }
+
+      // Validar que el grado no exceda 10
+      if (gradoValue && (parseInt(gradoValue) < 1 || parseInt(gradoValue) > 10)) {
+        Notification.error('El grado no puede exceder a 10');
+        return;
+      }
+      
       const data = {
         email: document.getElementById('reg-email').value,
         password: document.getElementById('reg-password').value,
         nombre: document.getElementById('reg-nombre').value,
-        role: document.getElementById('reg-role').value,
-        grado: document.getElementById('reg-grado').value || null
+        role: roleValue,
+        grado: gradoValue || null
       };
 
       const validation = validateForm(data, {
@@ -88,9 +99,47 @@ class RegisterView {
           Notification.error(response.message || 'Error al registrarse');
         }
       } catch (error) {
-        Notification.error(error.response?.data?.message || 'Error al registrarse');
+        // Manejar errores específicos del backend
+        const errorMessage = error.response?.data?.message || error.message || 'Error al registrarse';
+        
+        // Mostrar mensajes específicos según el error
+        if (errorMessage.includes('Solo se puede registrar como Estudiante') || 
+            errorMessage.includes('Solo puedes registrarte como estudiante')) {
+          Notification.error('Solo puedes registrarte como estudiante');
+        } else if (errorMessage.includes('grado') && errorMessage.includes('10')) {
+          Notification.error('El grado no puede exceder a 10');
+        } else {
+          Notification.error(errorMessage);
+        }
       } finally {
         Loading.hide();
+      }
+    });
+
+    // Validación en tiempo real para el campo de grado
+    const gradoInput = document.getElementById('reg-grado');
+    gradoInput.addEventListener('blur', () => {
+      const gradoValue = gradoInput.value;
+      if (gradoValue && (parseInt(gradoValue) < 1 || parseInt(gradoValue) > 10)) {
+        Notification.error('El grado no puede exceder a 10');
+        gradoInput.focus();
+      }
+    });
+
+    gradoInput.addEventListener('input', () => {
+      const gradoValue = gradoInput.value;
+      if (gradoValue && parseInt(gradoValue) > 10) {
+        Notification.error('El grado no puede exceder a 10');
+        gradoInput.value = 10;
+      }
+    });
+
+    // Validación en tiempo real para el campo de rol (por si alguien manipula el DOM)
+    const roleSelect = document.getElementById('reg-role');
+    roleSelect.addEventListener('change', () => {
+      if (roleSelect.value !== 'Estudiante') {
+        Notification.error('Solo puedes registrarte como estudiante');
+        roleSelect.value = 'Estudiante';
       }
     });
   }

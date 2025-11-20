@@ -1,2 +1,0 @@
-Eres experto programador en typescript orientado a objetos
-Necesito el programa Hola Mundo !!! más básico en typescript

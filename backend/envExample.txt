@@ -1,0 +1,15 @@
+NODE_ENV=development
+PORT=3000
+JWT_SECRET=tu-clave-secreta-super-segura-minimo-32-caracteres-para-jwt-2024
+DB_HOST=postgres-db1.cxek2gs2ybjb.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=asesoria
+DB_USER=
+DB_PASSWORD=
+CORS_ORIGIN=http://localhost:8080
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=
+SOCKET_IO_PATH=/socket.io
+TS_NODE_TRANSPILE_ONLY=true

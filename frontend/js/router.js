@@ -2,6 +2,7 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupsView from './views/GroupsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -21,6 +22,7 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
     // TODO: Agregar más rutas cuando se implementen las vistas
 
     // Escuchar cambios de hash
@@ -71,8 +73,14 @@ class Router {
       }
     }
 
+    // Limpiar vista anterior si tiene método cleanup
+    if (this.currentView && typeof this.currentView.cleanup === 'function') {
+      this.currentView.cleanup();
+    }
+
     // Renderizar vista
     route.view.render();
+    this.currentView = route.view;
 
     // Renderizar header y sidebar si está autenticado
     if (authService.isAuthenticated()) {

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { emitToGroup, emitToUser } from '../config/socket';
+import { createAndEmitNotification } from '../utils/notifications';
 
 /**
  * Listar grupos (según rol)
@@ -204,6 +205,14 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
     const { id } = req.params;
     const { userId } = req.body;
 
+    // Obtener información del grupo
+    const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
+    if (groupResult.rows.length === 0) {
+      sendError(res, 'Grupo no encontrado', 404);
+      return;
+    }
+    const groupName = groupResult.rows[0].nombre;
+
     // Verificar que el grupo no tenga más de 5 miembros
     const countResult = await query(
       'SELECT COUNT(*) as count FROM group_members WHERE "groupId" = $1',
@@ -227,7 +236,23 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
       return;
     }
 
-    emitToUser(userId, 'group_invitation', { groupId: id, accepted: true });
+    // Emitir eventos
+    emitToUser(userId, 'group_invitation', { groupId: parseInt(id, 10), accepted: true });
+    emitToGroup(parseInt(id, 10), 'member_added', { 
+      groupId: parseInt(id, 10), 
+      userId: parseInt(userId, 10) 
+    });
+
+    // Crear notificación para el usuario agregado
+    await createAndEmitNotification({
+      userId: parseInt(userId, 10),
+      tipo: 'miembro_agregado',
+      titulo: 'Agregado a grupo',
+      mensaje: `Has sido agregado al grupo "${groupName}"`,
+      relacionId: parseInt(id, 10),
+      relacionTipo: 'group'
+    });
+
     sendSuccess(res, result.rows[0], 'Miembro agregado exitosamente', 201);
   } catch (error) {
     console.error('Error en addGroupMember:', error);
@@ -242,6 +267,14 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
   try {
     const { id, userId } = req.params;
 
+    // Obtener información del grupo antes de eliminar
+    const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
+    if (groupResult.rows.length === 0) {
+      sendError(res, 'Grupo no encontrado', 404);
+      return;
+    }
+    const groupName = groupResult.rows[0].nombre;
+
     const result = await query(
       'DELETE FROM group_members WHERE "groupId" = $1 AND "userId" = $2 RETURNING *',
       [id, userId]
@@ -251,6 +284,29 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
       sendError(res, 'Miembro no encontrado', 404);
       return;
     }
+
+    // Emitir eventos
+    emitToGroup(parseInt(id, 10), 'member_removed', {
+      groupId: parseInt(id, 10),
+      userId: parseInt(userId, 10),
+      removedBy: req.user?.userId
+    });
+
+    // Notificar al usuario eliminado
+    emitToUser(parseInt(userId, 10), 'removed_from_group', {
+      groupId: parseInt(id, 10),
+      groupName: groupName
+    });
+
+    // Crear notificación para el usuario eliminado
+    await createAndEmitNotification({
+      userId: parseInt(userId, 10),
+      tipo: 'miembro_eliminado',
+      titulo: 'Eliminado de grupo',
+      mensaje: `Has sido eliminado del grupo "${groupName}"`,
+      relacionId: parseInt(id, 10),
+      relacionTipo: 'group'
+    });
 
     sendSuccess(res, null, 'Miembro eliminado exitosamente');
   } catch (error) {
@@ -272,6 +328,18 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
       return;
     }
 
+    // Obtener información del grupo
+    const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
+    if (groupResult.rows.length === 0) {
+      sendError(res, 'Grupo no encontrado', 404);
+      return;
+    }
+    const groupName = groupResult.rows[0].nombre;
+
+    // Obtener nombre del invitador
+    const inviterResult = await query('SELECT nombre FROM users WHERE id = $1', [req.user.userId]);
+    const inviterName = inviterResult.rows.length > 0 ? inviterResult.rows[0].nombre : 'Usuario';
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Expira en 7 días
 
@@ -282,7 +350,22 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
       [id, invitedUserId, req.user.userId, expiresAt]
     );
 
-    emitToUser(invitedUserId, 'group_invitation', { groupId: id, invitationId: result.rows[0].id });
+    // Emitir evento por Socket.IO
+    emitToUser(invitedUserId, 'group_invitation', { 
+      groupId: parseInt(id, 10), 
+      invitationId: result.rows[0].id 
+    });
+
+    // Crear notificación
+    await createAndEmitNotification({
+      userId: invitedUserId,
+      tipo: 'invitacion_grupo',
+      titulo: 'Invitación a grupo',
+      mensaje: `${inviterName} te ha invitado al grupo "${groupName}"`,
+      relacionId: parseInt(id, 10),
+      relacionTipo: 'group'
+    });
+
     sendSuccess(res, result.rows[0], 'Invitación enviada exitosamente', 201);
   } catch (error) {
     console.error('Error en sendGroupInvitation:', error);
@@ -326,7 +409,11 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
     }
 
     const invResult = await query(
-      'SELECT * FROM group_invitations WHERE id = $1 AND "invitedUserId" = $2',
+      `SELECT gi.*, g.nombre as "groupName", u.nombre as "inviterName"
+       FROM group_invitations gi
+       JOIN groups g ON gi."groupId" = g.id
+       JOIN users u ON gi."inviterId" = u.id
+       WHERE gi.id = $1 AND gi."invitedUserId" = $2`,
       [invitationId, req.user.userId]
     );
 
@@ -359,6 +446,16 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
       'UPDATE group_invitations SET estado = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
       ['aceptada', invitationId]
     );
+
+    // Notificar al invitador
+    await createAndEmitNotification({
+      userId: invitation.inviterId,
+      tipo: 'invitacion_aceptada',
+      titulo: 'Invitación aceptada',
+      mensaje: `${req.user.email || 'Usuario'} aceptó tu invitación al grupo "${invitation.groupName}"`,
+      relacionId: invitation.groupId,
+      relacionTipo: 'group'
+    });
   } catch (error) {
     console.error('Error en acceptInvitation:', error);
     sendError(res, 'Error al aceptar invitación', 500);

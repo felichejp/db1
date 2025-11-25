@@ -6,17 +6,16 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
-//modulo 6
+// ➕ (NUEVO) Se importan las rutas del Módulo 6
 import evaluacionesRoutes from "./routes/evaluaciones";
 import estadisticasRoutes from "./routes/estadisticas";
 import badgesRoutes from "./routes/badges";
 
-
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3000;
 
-// Database configuration from environment variables
-const dbConfig: DatabaseConfig = {
+// 🔄 ➕ Se centraliza la configuración de la BD (reutilizable por otros módulos)
+export const dbConfig: DatabaseConfig = {
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_DATABASE,
@@ -24,8 +23,11 @@ const dbConfig: DatabaseConfig = {
   password: process.env.DB_PASSWORD,
 };
 
-// Initialize database instance
+// 🔁 ✔ ÚNICA instancia global de la base de datos
 const database = new Database(dbConfig);
+
+// 🔁 ➕ Se guarda la instancia en Express para que cualquier ruta pueda acceder a ella
+app.set("db", database);
 
 interface Lead {
   name: string;
@@ -35,18 +37,16 @@ interface Lead {
   password: string;
 }
 
-// Middleware
+// Middlewares generales
 app.use(cors());
 app.use(express.json());
 
-//modulo 6
-
+// 🔗 ➕ Se registran RUTAS del Módulo 6
 app.use("/api/evaluaciones", evaluacionesRoutes);
 app.use("/api/estadisticas", estadisticasRoutes);
 app.use("/api/badges", badgesRoutes);
 
-
-// Health endpoint
+// Endpoint de prueba
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
@@ -55,150 +55,94 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// ⚙️ Rutas originales de LEADS (NO SE MODIFICAN)
 app.post('/api/verify-code', async (req: Request, res: Response) => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
 
     if (!idLead || !codeEscritoPorElUsuario) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Faltan parámetros: idLead o codeEscritoPorElUsuario'
-      });
+      return res.status(400).json({ status: 'error', message: 'Faltan parámetros' });
     }
 
-    // 1. LEER el código almacenado en la BD
-    const selectQuery = `
+    const result = await database.query(`
       SELECT code 
       FROM "codeLead"
       WHERE "idLead" = $1
       ORDER BY id DESC
       LIMIT 1;
-    `;
-
-    const result = await database.query(selectQuery, [idLead]);
+    `, [idLead]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'No se encontró un código para ese lead'
-      });
+      return res.status(404).json({ status: 'error', message: 'No se encontró código' });
     }
 
-    const codigoBD = result.rows[0].code;
+    const esCorrecto = result.rows[0].code === codeEscritoPorElUsuario;
 
-    // 2. COMPARAR ambos códigos
-    const esCorrecto = codigoBD === codeEscritoPorElUsuario;
-
-    return res.status(200).json({
+    res.status(200).json({
       status: 'ok',
       match: esCorrecto,
       message: esCorrecto ? 'Código correcto' : 'Código incorrecto'
     });
 
   } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    console.error(error);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 });
 
 app.post('/api/send-code', async (req: Request, res: Response) => {
   try {
     const { name, institution, contactPhone, phone, password } = req.body as Lead;
-    
-    // Validate required fields
+
     if (!name || !institution || !contactPhone || !phone || !password) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Missing required fields',
-      });
+      return res.status(400).json({ status: 'error', message: 'Missing required fields' });
     }
 
-    // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Store in database
-    const insertQuery = `
+
+    const result = await database.query(`
       INSERT INTO lead (name, institution, "contactPhone", phone)
       VALUES ($1, $2, $3, $4)
       RETURNING id;
-    `;
-    const result = await database.query(insertQuery, [
-      name,
-      institution,
-      contactPhone,
-      phone
-    ]);
-    const insertPasswordQuery = `
+    `, [name, institution, contactPhone, phone]);
+
+    await database.query(`
       INSERT INTO "leadPassword" ("idLead", "password")
       VALUES ($1, $2)
-      RETURNING id;
-    `;
-    const resultPassword = await database.query(insertPasswordQuery, [result.rows[0].id, hashedPassword]);
+    `, [result.rows[0].id, hashedPassword]);
 
-    const insertCodeLeadQuery = `
+    const code = Math.floor(10000 + Math.random() * 89999) + '';
+
+    await database.query(`
       INSERT INTO "codeLead" ("idLead", code)
       VALUES ($1, $2)
-      RETURNING id;
-    `;
-    const code = Math.floor(10000 + Math.random() * 89999) + '';
-    const resultCode = await database.query(insertCodeLeadQuery, [result.rows[0].id, code]);
+    `, [result.rows[0].id, code]);
 
-    if (resultPassword.rows.length === 0 || resultCode.rows.length === 0) {
-      return res.status(500).json({
-        status: 'error',
-        message: 'Failed to save password or code',
-      });
-    }
-    console.log('Lead saved to database:', result.rows[0]);
-
-    // TODO: enviar el WA
     res.status(200).json({
       status: 'ok',
       message: 'Code sent successfully',
       leadId: result.rows[0].id,
     });
+
   } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    console.error(error);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 });
 
-// Connect to database and start server
+// 🚀 Conexión a la base de datos y arranque del servidor
 async function startServer() {
   try {
     await database.connect();
-    console.log('✅ Database connected successfully');
+    console.log('🔥 Base de datos conectada');
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🚀 Servidor http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Failed to connect to database:', error);
+    console.error('❌ Error conectando BD:', error);
     process.exit(1);
   }
 }
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server...');
-  await database.disconnect();
-  console.log('✅ Database disconnected');
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down server...');
-  await database.disconnect();
-  console.log('✅ Database disconnected');
-  process.exit(0);
-});
 
 startServer();

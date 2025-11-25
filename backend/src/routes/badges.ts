@@ -3,16 +3,35 @@ import { Router, Request, Response } from "express";
 const router = Router();
 
 /**
- * GET /api/badges/ping
- * Comprobación de la ruta de badges
+ *  Badges (logros) de prueba
+ * Más adelante estos se asignarán en base al desempeño del usuario
  */
-router.get("/ping", (req: Request, res: Response) => {
-  res.json({
-    modulo: 6,
-    seccion: "badges",
-    status: "ok",
-    mensaje: "Ruta de badges funcionando ✅"
-  });
+let badgesFake = [
+    { id: 1, nombre: "⭐ Tutor Destacado" },
+    { id: 2, nombre: "🎯 Muy Participativo" }
+];
+
+/**
+ *  Verificar ruta activa
+ */
+router.get("/ping", (_req: Request, res: Response) => {
+    res.json({
+        modulo: 6,
+        seccion: "badges",
+        status: "ok",
+        mensaje: "Badges listos 🏅"
+    });
+});
+
+/**
+ * Obtener lista de badges disponibles
+ */
+router.get("/", (_req: Request, res: Response) => {
+    res.json({
+        status: "ok",
+        total_badges: badgesFake.length,
+        badges: badgesFake
+    });
 });
 
 export default router;

@@ -1,8 +1,7 @@
 {
-<<<<<<< HEAD
-  "name": "asesoria-frontend",
+  "name": "peer-tutoring-frontend",
   "version": "1.0.0",
-  "description": "Frontend para aplicación de asesoría estudiantil",
+  "description": "Frontend para sistema de asesorías entre pares",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -20,14 +19,3 @@
   "author": "",
   "license": "MIT"
 }
-=======
-  "name": "peer-tutoring-frontend",
-  "version": "1.0.0",
-  "description": "Frontend para sistema de asesorías entre pares",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  }
-}
-
->>>>>>> 2b6dd9f93a5a35bb4c7faea4ab0ce943df8f5561

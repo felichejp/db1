@@ -49,17 +49,24 @@ class AuthService {
    */
   async verifyToken() {
     const token = this.getToken();
-    if (!token) return false;
+    if (!token) {
+      console.log('Auth: No hay token');
+      return false;
+    }
 
     try {
-      const apiBaseUrl = window.API_BASE_URL || 'http://localhost:3000';
-      const response = await axios.get(`${apiBaseUrl}/api/auth/verify`, {
+      const response = await axios.get(`${window.API_BASE_URL || 'http://localhost:3000'}/api/auth/verify`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      return response.data.success && response.data.data.valid;
+      const isValid = response.data.success && response.data.data.valid;
+      if (!isValid) {
+        console.log('Auth: Token inválido');
+      }
+      return isValid;
     } catch (error) {
+      console.error('Auth: Error verificando token:', error.response?.status || error.message);
       return false;
     }
   }

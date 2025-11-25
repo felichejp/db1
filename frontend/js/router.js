@@ -30,7 +30,7 @@ class Router {
     this.handleRoute();
   }
 
-  handleRoute() {
+  async handleRoute() {
     const hash = window.location.hash || '#/dashboard';
     const route = this.routes.get(hash);
 
@@ -45,15 +45,30 @@ class Router {
     }
 
     // Verificar autenticación para rutas protegidas
-    if (route.protected && !authService.isAuthenticated()) {
-      window.location.hash = '#/login';
-      return;
+    if (route.protected) {
+      if (!authService.isAuthenticated()) {
+        window.location.hash = '#/login';
+        return;
+      }
+      
+      // Verificar que el token sea válido antes de renderizar
+      const isValid = await authService.verifyToken();
+      if (!isValid) {
+        authService.logout();
+        window.location.hash = '#/login';
+        return;
+      }
     }
 
     // Si está en login/register y ya está autenticado, redirigir a dashboard
     if (!route.protected && authService.isAuthenticated()) {
-      window.location.hash = '#/dashboard';
-      return;
+      const isValid = await authService.verifyToken();
+      if (isValid) {
+        window.location.hash = '#/dashboard';
+        return;
+      } else {
+        authService.logout();
+      }
     }
 
     // Renderizar vista

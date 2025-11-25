@@ -4,7 +4,7 @@ import { messagesAPI } from '../api/messages.js';
 import socketService from '../services/socketService.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
-import { formatDate, formatTime } from '../utils/helpers.js';
+import { formatDate, formatTime, getRoleName, getStatusName, getStatusColor } from '../utils/helpers.js';
 import { joinGroupRoom, leaveGroupRoom } from '../utils/socketHelpers.js';
 
 /**
@@ -14,13 +14,17 @@ class GroupsView {
   constructor() {
     this.groups = [];
     this.messages = {}; // { groupId: [messages] }
+    this.groupInfo = {}; // { groupId: { group, members, profesor } }
     this.currentGroupId = null;
     this.socketListeners = new Map();
   }
 
-  async render() {
+  async render(params = {}) {
     const user = authService.getCurrentUser();
     if (!user) return;
+
+    // Guardar el groupId del parámetro si existe
+    this.targetGroupId = params.groupId || null;
 
     const container = document.getElementById('view-container');
     container.innerHTML = `
@@ -73,10 +77,25 @@ class GroupsView {
       // Renderizar la interfaz con pestañas
       this.renderGroupsInterface();
       
-      // Cargar mensajes del primer grupo si existe
-      if (this.groups.length > 0) {
-        await this.switchToGroup(this.groups[0].id);
+      // Determinar qué grupo abrir
+      let groupToOpen = null;
+      if (this.targetGroupId) {
+        // Si hay un groupId objetivo, verificar que existe en los grupos del usuario
+        groupToOpen = this.groups.find(g => g.id === this.targetGroupId);
       }
+      
+      // Si no hay grupo objetivo o no se encontró, usar el primero
+      if (!groupToOpen && this.groups.length > 0) {
+        groupToOpen = this.groups[0];
+      }
+      
+      // Abrir el grupo correspondiente
+      if (groupToOpen) {
+        await this.switchToGroup(groupToOpen.id);
+      }
+
+      // Limpiar el targetGroupId después de usarlo
+      this.targetGroupId = null;
 
       // Configurar listeners de Socket.IO
       this.setupSocketListeners();
@@ -90,12 +109,15 @@ class GroupsView {
     const content = document.getElementById('groups-content');
     const viewInstance = this;
     
+    // Determinar qué pestaña debe estar activa
+    const activeGroupId = this.targetGroupId || (this.groups.length > 0 ? this.groups[0].id : null);
+    
     content.innerHTML = `
       <div class="groups-container">
         <div class="groups-tabs">
-          ${this.groups.map((group, index) => `
+          ${this.groups.map((group) => `
             <button 
-              class="group-tab ${index === 0 ? 'active' : ''}" 
+              class="group-tab ${group.id === activeGroupId ? 'active' : ''}" 
               data-group-id="${group.id}"
             >
               ${this.escapeHtml(group.nombre)}
@@ -103,31 +125,44 @@ class GroupsView {
           `).join('')}
         </div>
         
-        <div class="chat-container">
-          <div id="chat-header" class="chat-header">
-            <h3 id="chat-group-name">Selecciona un grupo</h3>
-          </div>
-          
-          <div id="chat-messages" class="chat-messages">
-            <div class="empty-state">
-              <div class="empty-state__icon">💬</div>
-              <div class="empty-state__message">Selecciona un grupo para ver el chat</div>
+        <div class="groups-content-layout">
+          <!-- Panel de información del grupo (izquierda) -->
+          <div class="group-info-panel">
+            <div id="group-info-content" class="group-info-content">
+              <div class="empty-state">
+                <div class="empty-state__icon">👨‍👩‍👧‍👦</div>
+                <div class="empty-state__message">Selecciona un grupo para ver su información</div>
+              </div>
             </div>
           </div>
           
-          <div id="chat-input-container" class="chat-input-container" style="display: none;">
-            <form id="chat-form" class="chat-form">
-              <input 
-                type="text" 
-                id="chat-input" 
-                class="chat-input" 
-                placeholder="Escribe un mensaje..."
-                autocomplete="off"
-              />
-              <button type="submit" class="btn btn-primary chat-send-btn">
-                Enviar
-              </button>
-            </form>
+          <!-- Chat (derecha) -->
+          <div class="chat-container">
+            <div id="chat-header" class="chat-header">
+              <h3 id="chat-group-name">Selecciona un grupo</h3>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+              <div class="empty-state">
+                <div class="empty-state__icon">💬</div>
+                <div class="empty-state__message">Selecciona un grupo para ver el chat</div>
+              </div>
+            </div>
+            
+            <div id="chat-input-container" class="chat-input-container" style="display: none;">
+              <form id="chat-form" class="chat-form">
+                <input 
+                  type="text" 
+                  id="chat-input" 
+                  class="chat-input" 
+                  placeholder="Escribe un mensaje..."
+                  autocomplete="off"
+                />
+                <button type="submit" class="btn btn-primary chat-send-btn">
+                  Enviar
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +200,8 @@ class GroupsView {
   async switchToGroup(groupId) {
     // Actualizar pestaña activa
     document.querySelectorAll('.group-tab').forEach(tab => {
-      if (parseInt(tab.dataset.groupId) === groupId) {
+      const tabGroupId = parseInt(tab.dataset.groupId);
+      if (tabGroupId === groupId) {
         tab.classList.add('active');
       } else {
         tab.classList.remove('active');
@@ -182,14 +218,13 @@ class GroupsView {
     
     if (!group) return;
 
-    // Actualizar header
-    const chatHeader = document.getElementById('chat-header');
+    // Actualizar header del chat
     const chatGroupName = document.getElementById('chat-group-name');
     if (chatGroupName) {
       chatGroupName.textContent = group.nombre;
     }
 
-    // Mostrar input
+    // Mostrar input del chat
     const chatInputContainer = document.getElementById('chat-input-container');
     if (chatInputContainer) {
       chatInputContainer.style.display = 'block';
@@ -205,14 +240,137 @@ class GroupsView {
     // Unirse al room del grupo
     await joinGroupRoom(groupId);
 
-    // Cargar mensajes
-    await this.loadMessages(groupId);
+    // Cargar información del grupo y mensajes en paralelo
+    await Promise.all([
+      this.loadGroupInfo(groupId),
+      this.loadMessages(groupId)
+    ]);
 
     // Enfocar el input
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
       chatInput.focus();
     }
+  }
+
+  async loadGroupInfo(groupId) {
+    const groupInfoContent = document.getElementById('group-info-content');
+    if (!groupInfoContent) return;
+
+    try {
+      // Mostrar loading
+      groupInfoContent.innerHTML = '<div class="spinner"></div>';
+
+      // Cargar información del grupo y miembros en paralelo
+      const [groupResponse, membersResponse] = await Promise.all([
+        groupsAPI.getById(groupId),
+        groupsAPI.getMembers(groupId)
+      ]);
+
+      if (!groupResponse.success || !membersResponse.success) {
+        groupInfoContent.innerHTML = '<p class="text-muted">Error al cargar información del grupo</p>';
+        return;
+      }
+
+      const group = groupResponse.data;
+      const members = membersResponse.data || [];
+
+      // Obtener información del profesor si existe
+      // El profesor debería estar en los miembros si es parte del grupo
+      const profesor = group.profesorId 
+        ? members.find(m => m.id === group.profesorId) 
+        : null;
+
+      // Guardar información
+      this.groupInfo[groupId] = {
+        group,
+        members,
+        profesor
+      };
+
+      // Renderizar información
+      this.renderGroupInfo(groupId);
+    } catch (error) {
+      console.error('Error cargando información del grupo:', error);
+      groupInfoContent.innerHTML = '<p class="text-muted">Error al cargar información del grupo</p>';
+    }
+  }
+
+  renderGroupInfo(groupId) {
+    const groupInfoContent = document.getElementById('group-info-content');
+    if (!groupInfoContent) return;
+
+    const info = this.groupInfo[groupId];
+    if (!info) return;
+
+    const { group, members, profesor } = info;
+    const currentUser = authService.getCurrentUser();
+
+    // Encontrar el profesor en los miembros si no se encontró antes
+    const profesorMember = profesor || members.find(m => m.role === 'Profesor');
+
+    let html = `
+      <div class="group-info">
+        <div class="group-info__header">
+          <h2 class="group-info__title">${this.escapeHtml(group.nombre)}</h2>
+          <span class="badge badge--${getStatusColor(group.estado)}">
+            ${getStatusName(group.estado)}
+          </span>
+        </div>
+
+        ${group.descripcion ? `
+          <div class="group-info__section">
+            <h3 class="group-info__section-title">Descripción</h3>
+            <p class="group-info__description">${this.escapeHtml(group.descripcion)}</p>
+          </div>
+        ` : ''}
+
+        ${profesorMember ? `
+          <div class="group-info__section">
+            <h3 class="group-info__section-title">Profesor</h3>
+            <div class="group-info__member">
+              <div class="group-info__member-avatar">👤</div>
+              <div class="group-info__member-details">
+                <div class="group-info__member-name">${this.escapeHtml(profesorMember.nombre)}</div>
+                <div class="group-info__member-role">${getRoleName(profesorMember.role)}</div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="group-info__section">
+          <h3 class="group-info__section-title">
+            Miembros (${members.length})
+          </h3>
+          <div class="group-info__members-list">
+            ${members.map(member => `
+              <div class="group-info__member ${member.id === currentUser.id ? 'group-info__member--current' : ''}">
+                <div class="group-info__member-avatar">👤</div>
+                <div class="group-info__member-details">
+                  <div class="group-info__member-name">
+                    ${this.escapeHtml(member.nombre)}
+                    ${member.id === currentUser.id ? ' <span class="group-info__you">(Tú)</span>' : ''}
+                  </div>
+                  <div class="group-info__member-role">${getRoleName(member.role)}</div>
+                  ${member.grado ? `<div class="group-info__member-grade">Grado ${member.grado}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="group-info__section">
+          <div class="group-info__meta">
+            <div class="group-info__meta-item">
+              <span class="group-info__meta-label">Creado:</span>
+              <span class="group-info__meta-value">${formatDate(group.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    groupInfoContent.innerHTML = html;
   }
 
   async loadMessages(groupId) {

@@ -328,6 +328,15 @@
   overflow-x: auto;
 }
 
+/* Groups Content Layout - Dos columnas */
+.groups-content-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: var(--spacing-lg);
+  flex: 1;
+  min-height: 0;
+}
+
 .group-tab {
   padding: var(--spacing-md) var(--spacing-lg);
   background: none;
@@ -352,6 +361,172 @@
   background-color: var(--bg-hover);
 }
 
+/* Group Info Panel */
+.group-info-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.group-info-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+}
+
+.group-info-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.group-info-content::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.group-info-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.group-info-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.group-info__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.group-info__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.group-info__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.group-info__section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+}
+
+.group-info__description {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.group-info__members-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.group-info__member {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.group-info__member:hover {
+  background-color: var(--bg-hover);
+}
+
+.group-info__member--current {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--accent-color);
+}
+
+.group-info__member-avatar {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-info__member-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-info__member-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.group-info__you {
+  color: var(--accent-color);
+  font-size: 0.875rem;
+}
+
+.group-info__member-role {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.group-info__member-grade {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.group-info__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.group-info__meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-info__meta-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.group-info__meta-value {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 /* Chat Container */
 .chat-container {
   display: flex;
@@ -361,6 +536,7 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   background-color: var(--bg-secondary);
+  min-height: 0;
 }
 
 .chat-header {
@@ -520,10 +696,30 @@
 }
 
 /* Responsive Chat */
+@media (max-width: 1024px) {
+  .groups-content-layout {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .groups-container {
     height: calc(100vh - 200px);
     min-height: 500px;
+  }
+
+  .groups-content-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .group-info-panel {
+    max-height: 300px;
+    order: 2;
+  }
+
+  .chat-container {
+    order: 1;
   }
 
   .message__content {
@@ -537,6 +733,10 @@
   .group-tab {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: 0.875rem;
+  }
+
+  .group-info__title {
+    font-size: 1.25rem;
   }
 }
 

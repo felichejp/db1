@@ -34,7 +34,18 @@ class Router {
 
   async handleRoute() {
     const hash = window.location.hash || '#/dashboard';
-    const route = this.routes.get(hash);
+    let route = this.routes.get(hash);
+    let params = {};
+
+    // Si no hay ruta exacta, intentar buscar rutas con parámetros
+    if (!route) {
+      // Verificar si es una ruta de grupos con ID: #/groups/:id
+      const groupsMatch = hash.match(/^#\/groups\/(\d+)$/);
+      if (groupsMatch) {
+        route = this.routes.get('#/groups');
+        params = { groupId: parseInt(groupsMatch[1], 10) };
+      }
+    }
 
     // Si no hay ruta, mostrar 404
     if (!route) {
@@ -78,8 +89,12 @@ class Router {
       this.currentView.cleanup();
     }
 
-    // Renderizar vista
-    route.view.render();
+    // Renderizar vista con parámetros si los hay
+    if (Object.keys(params).length > 0) {
+      route.view.render(params);
+    } else {
+      route.view.render();
+    }
     this.currentView = route.view;
 
     // Renderizar header y sidebar si está autenticado

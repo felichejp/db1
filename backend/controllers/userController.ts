@@ -127,6 +127,32 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Obtener estudiantes disponibles para chat (todos los estudiantes pueden ver otros estudiantes)
+ */
+export async function getStudents(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    // Obtener todos los estudiantes (excluyendo al usuario actual)
+    const result = await query(
+      `SELECT id, email, nombre, role, grado, "createdAt" 
+       FROM users 
+       WHERE role = 'Estudiante' AND id != $1
+       ORDER BY nombre ASC`,
+      [req.user.userId]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en getStudents:', error);
+    sendError(res, 'Error al obtener estudiantes', 500);
+  }
+}
+
+/**
  * Obtener perfil completo de usuario
  */
 export async function getUserProfile(

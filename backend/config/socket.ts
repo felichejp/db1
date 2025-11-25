@@ -57,6 +57,31 @@ export function initializeSocket(server: HttpServer): Server {
       logger.debug(`Usuario ${user.userId} salió del grupo ${groupId}`);
     });
 
+    // Evento: Unirse a chat directo con otro usuario
+    socket.on('join_direct_chat', (data: { userId: number }) => {
+      const otherUserId = data.userId;
+      // Crear un room único para la conversación entre dos usuarios
+      const chatRoom = `direct_${Math.min(user.userId, otherUserId)}_${Math.max(user.userId, otherUserId)}`;
+      socket.join(chatRoom);
+      logger.debug(`Usuario ${user.userId} se unió al chat directo con ${otherUserId}`);
+    });
+
+    // Evento: Enviar mensaje directo
+    socket.on('direct_message', (data: { recipientId: number; content: string }) => {
+      const recipientId = data.recipientId;
+      const chatRoom = `direct_${Math.min(user.userId, recipientId)}_${Math.max(user.userId, recipientId)}`;
+      
+      // Emitir mensaje a ambos usuarios en el room
+      io.to(chatRoom).emit('new_direct_message', {
+        senderId: user.userId,
+        recipientId: recipientId,
+        content: data.content,
+        timestamp: new Date()
+      });
+      
+      logger.debug(`Usuario ${user.userId} envió mensaje directo a ${recipientId}`);
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Usuario desconectado: ${user.email} (${user.userId})`);
     });

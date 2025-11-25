@@ -2,6 +2,7 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupsView from './views/GroupsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -32,10 +33,39 @@ class Router {
 
   handleRoute() {
     const hash = window.location.hash || '#/dashboard';
+    
+    // Manejar rutas dinámicas
+    if (hash.startsWith('#/groups/')) {
+      const groupId = hash.split('/')[2];
+      if (groupId) {
+        // Verificar autenticación
+        if (!authService.isAuthenticated()) {
+          window.location.hash = '#/login';
+          return;
+        }
+        GroupsView.renderGroupDetails(groupId);
+        Header.render();
+        Sidebar.render();
+        return;
+      }
+    }
+
     const route = this.routes.get(hash);
 
-    // Si no hay ruta, mostrar 404
+    // Si no hay ruta, verificar si es una ruta dinámica conocida
     if (!route) {
+      // Rutas dinámicas de grupos
+      if (hash === '#/groups') {
+        if (!authService.isAuthenticated()) {
+          window.location.hash = '#/login';
+          return;
+        }
+        GroupsView.render();
+        Header.render();
+        Sidebar.render();
+        return;
+      }
+
       NotFoundView.render();
       if (authService.isAuthenticated()) {
         Header.render();

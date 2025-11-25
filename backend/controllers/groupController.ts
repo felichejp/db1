@@ -41,12 +41,23 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * Crear grupo (Profesor, Admin)
+ * Crear grupo (solo Admin)
  */
 export async function createGroup(req: Request, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    // Solo Admin puede crear grupos
+    if (req.user.role !== 'Admin') {
+      sendError(res, 'Solo los administradores pueden crear grupos', 403);
+      return;
+    }
+
     const { nombre, descripcion, profesorId } = req.body;
-    const finalProfesorId = profesorId || (req.user?.role === 'Profesor' ? req.user.userId : null);
+    const finalProfesorId = profesorId || null;
 
     const result = await query(
       `INSERT INTO groups (nombre, descripcion, "profesorId")
@@ -143,7 +154,7 @@ export async function updateGroup(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * Eliminar grupo
+ * Eliminar grupo (solo Admin)
  */
 export async function deleteGroup(req: Request, res: Response): Promise<void> {
   try {
@@ -160,9 +171,9 @@ export async function deleteGroup(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const group = groupResult.rows[0];
-    if (req.user.role !== 'Admin' && group.profesorId !== req.user.userId) {
-      sendError(res, 'No tiene permisos para eliminar este grupo', 403);
+    // Solo Admin puede eliminar grupos
+    if (req.user.role !== 'Admin') {
+      sendError(res, 'Solo los administradores pueden eliminar grupos', 403);
       return;
     }
 

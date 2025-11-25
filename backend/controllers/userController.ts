@@ -192,3 +192,35 @@ export async function getUserProfile(
   }
 }
 
+/**
+ * Listar profesores y estudiantes (para chat)
+ */
+export async function getChatUsers(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    // Solo Profesores y Estudiantes pueden ver la lista de chat
+    if (req.user.role !== 'Profesor' && req.user.role !== 'Estudiante') {
+      sendError(res, 'Solo profesores y estudiantes pueden ver la lista de chat', 403);
+      return;
+    }
+
+    const result = await query(
+      `SELECT id, email, nombre, role, grado 
+       FROM users 
+       WHERE role IN ('Profesor', 'Estudiante') 
+       AND id != $1
+       ORDER BY role DESC, nombre ASC`,
+      [req.user.userId]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en getChatUsers:', error);
+    sendError(res, 'Error al obtener usuarios', 500);
+  }
+}
+

@@ -2,9 +2,11 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupsView from './views/GroupsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
+import ChatWidget from './components/ChatWidget.js';
 
 /**
  * Router hash-based
@@ -21,7 +23,10 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
-    // TODO: Agregar más rutas cuando se implementen las vistas
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
+    
+    // Ruta dinámica para grupos individuales
+    this.routes.set('#/groups/:id', { view: GroupsView, protected: true });
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -31,7 +36,13 @@ class Router {
   }
 
   async handleRoute() {
-    const hash = window.location.hash || '#/dashboard';
+    let hash = window.location.hash || '#/dashboard';
+    
+    // Manejar rutas dinámicas
+    if (hash.startsWith('#/groups/')) {
+      hash = '#/groups/:id';
+    }
+    
     const route = this.routes.get(hash);
 
     // Si no hay ruta, mostrar 404
@@ -78,6 +89,17 @@ class Router {
     if (authService.isAuthenticated()) {
       Header.render();
       Sidebar.render();
+      
+      // Asegurar que el chat se inicialice si es necesario
+      const user = authService.getCurrentUser();
+      if (user && (user.role === 'Profesor' || user.role === 'Estudiante')) {
+        // Verificar si el chat ya está inicializado
+        if (!document.getElementById('chat-widget-container')) {
+          setTimeout(() => {
+            ChatWidget.init();
+          }, 100);
+        }
+      }
     } else {
       Header.container.innerHTML = '';
       Sidebar.container.innerHTML = '';

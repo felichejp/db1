@@ -4,6 +4,7 @@ import socketService from './services/socketService.js';
 import { messagesAPI } from './api/messages.js';
 import { groupsAPI } from './api/groups.js';
 import Notification from './components/Notification.js';
+import ChatWidget from './components/ChatWidget.js';
 
 // Configurar API base URL
 window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
@@ -73,6 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Token válido, conectando Socket.IO...');
       // Conectar Socket.IO
       socketService.connect();
+      
+      // Inicializar Chat Widget (solo para Profesores y Estudiantes)
+      // Esperar un momento para asegurar que el DOM esté listo
+      setTimeout(() => {
+        ChatWidget.init();
+      }, 100);
 
         // Configurar listeners de Socket.IO
         

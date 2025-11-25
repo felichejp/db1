@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const PORT = 8081;
 const MIME_TYPES = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -63,5 +63,3 @@ server.listen(PORT, () => {
   console.log(`✅ Servidor frontend corriendo en http://localhost:${PORT}`);
   console.log(`📁 Sirviendo archivos desde: ${__dirname}`);
 });
-
-

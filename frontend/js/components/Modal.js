@@ -24,11 +24,17 @@ class Modal {
     this.modal.innerHTML = `
       <div class="modal__header">
         <h2 class="modal__title">${title}</h2>
-        <button class="modal__close" onclick="window.currentModal?.hide()">×</button>
+        <button class="modal__close" id="modal-close-btn">×</button>
       </div>
       <div class="modal__body">${content}</div>
       ${footer ? `<div class="modal__footer">${footer}</div>` : ''}
     `;
+
+    // Attach close button event listener
+    const closeBtn = this.modal.querySelector('#modal-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hide());
+    }
 
     this.overlay.appendChild(this.modal);
     document.body.appendChild(this.overlay);

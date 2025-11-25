@@ -2,6 +2,8 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupsView from './views/GroupsView.js';
+import GroupDetailView from './views/GroupDetailView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -21,7 +23,8 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
-    // TODO: Agregar más rutas cuando se implementen las vistas
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
+    // Rutas dinámicas se manejan en handleRoute
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -32,9 +35,18 @@ class Router {
 
   async handleRoute() {
     const hash = window.location.hash || '#/dashboard';
-    const route = this.routes.get(hash);
+    let route = this.routes.get(hash);
 
-    // Si no hay ruta, mostrar 404
+    // Si no hay ruta exacta, verificar rutas dinámicas
+    if (!route) {
+      // Ruta dinámica para detalles de grupo: #/groups/:id
+      const groupDetailMatch = hash.match(/^#\/groups\/(\d+)$/);
+      if (groupDetailMatch) {
+        route = { view: GroupDetailView, protected: true };
+      }
+    }
+
+    // Si aún no hay ruta, mostrar 404
     if (!route) {
       NotFoundView.render();
       if (authService.isAuthenticated()) {

@@ -26,12 +26,21 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Hashear contraseña
     const passwordHash = await hashPassword(password);
 
+    // Normalizar grado: convertir a número o null
+    let gradoValue: number | null = null;
+    if (grado !== undefined && grado !== null && grado !== '') {
+      const gradoNum = parseInt(grado, 10);
+      if (!isNaN(gradoNum) && gradoNum >= 1) {
+        gradoValue = gradoNum;
+      }
+    }
+
     // Crear usuario
     const result = await query(
       `INSERT INTO users (email, "passwordHash", nombre, role, grado)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, nombre, role, grado`,
-      [email, passwordHash, nombre, role, grado || null]
+      [email, passwordHash, nombre, role, gradoValue]
     );
 
     const user = result.rows[0];

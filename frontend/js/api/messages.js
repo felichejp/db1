@@ -2,8 +2,13 @@ const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
 
 export const messagesAPI = {
   async getByGroup(groupId) {
-    const response = await axios.get(`${API_BASE_URL}/api/messages/group/${groupId}`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/messages/group/${groupId}`);
+      return response.data;
+    } catch (error) {
+      // Si falla, devolver un objeto con success: false
+      return { success: false, message: error.response?.data?.message || 'Error al cargar mensajes' };
+    }
   },
 
   async create(data) {

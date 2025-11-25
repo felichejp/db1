@@ -52,13 +52,49 @@ class AuthService {
     if (!token) return false;
 
     try {
-      const response = await axios.get('/api/auth/verify', {
+      const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
+      const response = await axios.get(`${API_BASE_URL}/api/auth/verify`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      return response.data.success && response.data.data.valid;
+      
+      if (response.data.success && response.data.data.valid) {
+        // Actualizar información del usuario si está disponible
+        if (response.data.data.user) {
+          this.setAuth(token, response.data.data.user);
+        }
+        return true;
+      }
+      return false;
     } catch (error) {
+      console.warn('Error verificando token:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Refresca la información del usuario desde el servidor
+   */
+  async refreshUser() {
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success && response.data.data) {
+        this.setAuth(token, response.data.data);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Error refrescando usuario:', error);
       return false;
     }
   }

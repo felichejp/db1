@@ -37,7 +37,19 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
       [req.user.userId, groupId, content, tipo || 'texto']
     );
 
-    emitToGroup(groupId, 'new_message', result.rows[0]);
+    // Obtener información del remitente para incluir en el evento
+    const senderResult = await query(
+      'SELECT nombre, email FROM users WHERE id = $1',
+      [req.user.userId]
+    );
+
+    const messageWithSender = {
+      ...result.rows[0],
+      senderName: senderResult.rows[0]?.nombre || 'Usuario',
+      senderEmail: senderResult.rows[0]?.email || ''
+    };
+
+    emitToGroup(groupId, 'new_message', messageWithSender);
     sendSuccess(res, result.rows[0], 'Mensaje enviado', 201);
   } catch (error) {
     console.error('Error en createMessage:', error);

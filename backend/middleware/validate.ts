@@ -27,7 +27,16 @@ export const validateRegister = [
   body('role')
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+  body('grado')
+    .optional({ values: 'falsy' })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true; // Permitir valores vacíos
+      }
+      const num = parseInt(value, 10);
+      return !isNaN(num) && num >= 1;
+    })
+    .withMessage('Grado inválido (debe ser un número mayor o igual a 1)'),
   validate
 ];
 

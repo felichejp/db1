@@ -56,12 +56,18 @@ class RegisterView {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const role = document.getElementById('reg-role').value;
+      const gradoValue = document.getElementById('reg-grado').value.trim();
+
       const data = {
-        email: document.getElementById('reg-email').value,
-        password: document.getElementById('reg-password').value,
-        nombre: document.getElementById('reg-nombre').value,
-        role: document.getElementById('reg-role').value,
-        grado: document.getElementById('reg-grado').value || null
+        email,
+        password,
+        nombre,
+        role,
+        grado: gradoValue ? parseInt(gradoValue, 10) : undefined
       };
 
       const validation = validateForm(data, {
@@ -76,6 +82,11 @@ class RegisterView {
         return;
       }
 
+      // Remover grado si está vacío o undefined
+      if (!data.grado || isNaN(data.grado)) {
+        delete data.grado;
+      }
+
       try {
         Loading.show();
         const response = await authAPI.register(data);
@@ -85,10 +96,34 @@ class RegisterView {
           Notification.success('Registro exitoso');
           window.location.hash = '#/dashboard';
         } else {
-          Notification.error(response.message || 'Error al registrarse');
+          // Manejar errores de validación del backend
+          let errorMessage = response.message || 'Error al registrarse';
+          if (response.details && Array.isArray(response.details)) {
+            // Si hay detalles de validación, mostrar el primer error
+            errorMessage = response.details[0]?.msg || response.details[0]?.message || errorMessage;
+          }
+          Notification.error(errorMessage);
         }
       } catch (error) {
-        Notification.error(error.response?.data?.message || 'Error al registrarse');
+        // Manejar errores de red y validación
+        let errorMessage = 'Error al registrarse';
+        
+        if (error.response) {
+          const errorData = error.response.data;
+          if (errorData) {
+            if (errorData.details && Array.isArray(errorData.details)) {
+              // Errores de validación de express-validator
+              errorMessage = errorData.details[0]?.msg || errorData.details[0]?.message || errorData.message || errorMessage;
+            } else {
+              errorMessage = errorData.message || errorMessage;
+            }
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        Notification.error(errorMessage);
+        console.error('Error en registro:', error);
       } finally {
         Loading.hide();
       }

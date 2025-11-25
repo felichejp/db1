@@ -7,8 +7,13 @@ export const groupsAPI = {
   },
 
   async getById(id) {
-    const response = await axios.get(`${API_BASE_URL}/api/groups/${id}`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/groups/${id}`);
+      return response.data;
+    } catch (error) {
+      // Re-lanzar el error para que el componente lo maneje
+      throw error;
+    }
   },
 
   async create(data) {
@@ -27,8 +32,13 @@ export const groupsAPI = {
   },
 
   async getMembers(id) {
-    const response = await axios.get(`${API_BASE_URL}/api/groups/${id}/members`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/groups/${id}/members`);
+      return response.data;
+    } catch (error) {
+      // Si falla, devolver un objeto con success: false
+      return { success: false, message: error.response?.data?.message || 'Error al cargar miembros' };
+    }
   },
 
   async addMember(id, userId) {

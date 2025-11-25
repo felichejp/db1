@@ -56,14 +56,20 @@ class Sidebar {
     const menuItems = this.getMenuItems(user.role);
     const currentPath = window.location.hash || '#/dashboard';
 
-    const menuHTML = menuItems.map(item => `
-      <li class="sidebar__item">
-        <a href="${item.path}" class="sidebar__link ${currentPath === item.path ? 'active' : ''}">
-          <span>${item.icon}</span>
-          <span>${item.label}</span>
-        </a>
-      </li>
-    `).join('');
+    const menuHTML = menuItems.map(item => {
+      // Verificar si la ruta actual coincide (incluyendo rutas dinámicas)
+      const isActive = currentPath === item.path || 
+                      (item.path === '#/groups' && currentPath.startsWith('#/groups/'));
+      
+      return `
+        <li class="sidebar__item">
+          <a href="${item.path}" class="sidebar__link ${isActive ? 'active' : ''}">
+            <span>${item.icon}</span>
+            <span>${item.label}</span>
+          </a>
+        </li>
+      `;
+    }).join('');
 
     this.container.innerHTML = `
       <aside class="sidebar">

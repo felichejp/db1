@@ -4,7 +4,7 @@ import { messagesAPI } from '../api/messages.js';
 import socketService from '../services/socketService.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
-// Helpers no necesarios en esta vista
+import { formatDate, getStatusName, getStatusColor } from '../utils/helpers.js';
 
 /**
  * Vista de Grupo con Chat
@@ -28,13 +28,21 @@ class GroupView {
     const hash = window.location.hash;
     const match = hash.match(/#\/groups\/(\d+)/);
     
-    if (!match) {
+    if (!match || !match[1]) {
       Notification.error('ID de grupo inválido');
       window.location.hash = '#/dashboard';
       return;
     }
 
     this.currentGroupId = parseInt(match[1], 10);
+    
+    if (isNaN(this.currentGroupId) || this.currentGroupId <= 0) {
+      Notification.error('ID de grupo inválido');
+      window.location.hash = '#/dashboard';
+      return;
+    }
+    
+    console.log('ID de grupo extraído:', this.currentGroupId);
 
     const container = document.getElementById('view-container');
     container.innerHTML = `
@@ -55,8 +63,28 @@ class GroupView {
       await this.loadGroupData();
       this.setupSocketListeners();
     } catch (error) {
-      Notification.error('Error al cargar el grupo');
-      console.error(error);
+      console.error('Error en render:', error);
+      let errorMessage = 'Error al cargar el grupo';
+      
+      if (error.response) {
+        // Error de respuesta del servidor
+        errorMessage = error.response.data?.message || error.response.statusText || errorMessage;
+        console.error('Detalles del error:', {
+          status: error.response.status,
+          data: error.response.data,
+          message: errorMessage
+        });
+      } else if (error.request) {
+        // Error de red
+        errorMessage = 'Error de conexión. Verifica que el servidor esté corriendo.';
+        console.error('Error de red:', error.request);
+      } else {
+        // Otro tipo de error
+        errorMessage = error.message || errorMessage;
+        console.error('Error:', error);
+      }
+      
+      Notification.error(errorMessage);
       window.location.hash = '#/dashboard';
     } finally {
       Loading.hide();
@@ -66,6 +94,12 @@ class GroupView {
   async loadGroupData() {
     try {
       console.log('Cargando datos del grupo:', this.currentGroupId);
+      
+      // Verificar que el ID sea válido antes de hacer las peticiones
+      if (!this.currentGroupId || isNaN(this.currentGroupId)) {
+        throw new Error('ID de grupo inválido');
+      }
+      
       const [groupRes, membersRes, messagesRes] = await Promise.all([
         groupsAPI.getById(this.currentGroupId),
         groupsAPI.getMembers(this.currentGroupId),
@@ -118,7 +152,19 @@ class GroupView {
       this.scrollToBottom();
     } catch (error) {
       console.error('Error cargando datos del grupo:', error);
-      Notification.error(`Error: ${error.message || 'Error desconocido'}`);
+      
+      let errorMessage = 'Error desconocido';
+      if (error.response) {
+        errorMessage = error.response.data?.message || `Error ${error.response.status}: ${error.response.statusText}`;
+        console.error('Detalles del error del servidor:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Notification.error(`Error: ${errorMessage}`);
       throw error;
     }
   }
@@ -132,9 +178,6 @@ class GroupView {
     }
     
     titleEl.textContent = group.nombre;
-    if (group.descripcion) {
-      titleEl.innerHTML += ` <span class="text-muted" style="font-size: 0.8em; font-weight: normal;">- ${group.descripcion}</span>`;
-    }
 
     const content = document.getElementById('group-content');
     if (!content) {
@@ -142,21 +185,83 @@ class GroupView {
       return;
     }
 
-    // Preparar lista de miembros incluyendo el profesor si existe
+    // Separar alumnos del profesor
+    const alumnos = this.members.filter(m => m.role !== 'Profesor');
+    const profesor = this.members.find(m => m.role === 'Profesor') || 
+                     (group.profesorId ? {
+                       id: group.profesorId,
+                       nombre: group.profesorNombre || 'Sin asignar',
+                       email: group.profesorEmail || '',
+                       role: 'Profesor'
+                     } : null);
+
+    // Preparar lista de todos los miembros para el sidebar
     let allMembers = [...this.members];
-    if (group.profesorId && !allMembers.some(m => m.id === group.profesorId)) {
-      // Agregar el profesor a la lista si no está
-      allMembers.push({
-        id: group.profesorId,
-        nombre: group.profesorNombre || 'Profesor',
-        role: 'Profesor'
-      });
+    if (profesor && !allMembers.some(m => m.id === profesor.id)) {
+      allMembers.push(profesor);
     }
+
+    // Formatear fecha de creación
+    const fechaCreacion = group.createdAt ? formatDate(group.createdAt) : 'No disponible';
+    
+    // Formatear fecha de actualización
+    const fechaActualizacion = group.updatedAt ? formatDate(group.updatedAt) : 'No disponible';
 
     const messagesHtml = this.renderMessages();
     console.log('HTML de mensajes generado:', messagesHtml);
 
     content.innerHTML = `
+      <!-- Información del Grupo -->
+      <div class="group-info-section">
+        <div class="group-info__card">
+          <h3 class="group-info__title">Información del Grupo</h3>
+          <div class="group-info__grid">
+            <div class="group-info__item">
+              <span class="group-info__label">Estado:</span>
+              <span class="badge badge--${getStatusColor(group.estado)}">${getStatusName(group.estado)}</span>
+            </div>
+            <div class="group-info__item">
+              <span class="group-info__label">Profesor/Maestro:</span>
+              <span class="group-info__value">${profesor ? profesor.nombre : 'Sin asignar'}</span>
+            </div>
+            <div class="group-info__item">
+              <span class="group-info__label">Cantidad de Alumnos:</span>
+              <span class="group-info__value">${alumnos.length}</span>
+            </div>
+            <div class="group-info__item">
+              <span class="group-info__label">Fecha de Creación:</span>
+              <span class="group-info__value">${fechaCreacion}</span>
+            </div>
+            <div class="group-info__item">
+              <span class="group-info__label">Última Actualización:</span>
+              <span class="group-info__value">${fechaActualizacion}</span>
+            </div>
+            ${group.descripcion ? `
+            <div class="group-info__item group-info__item--full">
+              <span class="group-info__label">Descripción:</span>
+              <span class="group-info__value">${this.escapeHtml(group.descripcion)}</span>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Lista de Alumnos -->
+        <div class="group-info__card">
+          <h3 class="group-info__title">Alumnos del Grupo (${alumnos.length})</h3>
+          ${alumnos.length > 0 ? `
+            <ul class="group-students-list">
+              ${alumnos.map(alumno => `
+                <li class="group-students__item">
+                  <span class="group-students__name">${this.escapeHtml(alumno.nombre || 'Sin nombre')}</span>
+                  ${alumno.grado ? `<span class="group-students__grade">Grado ${alumno.grado}</span>` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          ` : '<p class="text-muted">No hay alumnos en este grupo</p>'}
+        </div>
+      </div>
+
+      <!-- Chat del Grupo -->
       <div class="group-chat-container">
         <div class="group-chat__sidebar">
           <div class="group-chat__members">
@@ -164,7 +269,7 @@ class GroupView {
             <ul class="member-list">
               ${allMembers.map(member => `
                 <li class="member-item">
-                  <span class="member-name">${member.nombre || 'Sin nombre'}</span>
+                  <span class="member-name">${this.escapeHtml(member.nombre || 'Sin nombre')}</span>
                   <span class="member-role">${member.role || 'Sin rol'}</span>
                 </li>
               `).join('')}

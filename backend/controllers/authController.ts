@@ -12,6 +12,11 @@ export async function register(req: Request, res: Response): Promise<void> {
   try {
     const { email, password, nombre, role, grado } = req.body;
 
+    if (role !== 'Estudiante') {
+      sendError(res, 'Solo se puede registar siendo estudiante', 400);
+      return;
+    }
+
     // Verificar si el email ya existe
     const existingUser = await query(
       'SELECT id FROM users WHERE email = $1',

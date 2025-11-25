@@ -27,7 +27,7 @@ export const validateRegister = [
   body('role')
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+  body('grado').optional().isInt({ min: 1, max:10 }).withMessage('Grado inválido'),
   validate
 ];
 
@@ -44,7 +44,12 @@ export const validateLogin = [
  * Validaciones para ID numérico en parámetros
  */
 export const validateId = [
-  param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+  param('id')
+    .custom((value) => {
+      const num = parseInt(value, 10);
+      return !isNaN(num) && num > 0;
+    })
+    .withMessage('ID inválido'),
   validate
 ];
 

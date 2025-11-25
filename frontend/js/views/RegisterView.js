@@ -41,7 +41,7 @@ class RegisterView {
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <input type="number" id="reg-grado" class="form-input" min="1" max="10">
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
           </form>
@@ -55,6 +55,19 @@ class RegisterView {
     const form = document.getElementById('register-form');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const role = document.getElementById('reg-role').value;
+      if (role !== 'Estudiante') {
+        Notification.error('Solo se puede registar siendo estudiante');
+        return;
+      }
+
+      const gradoV = document.getElementById('reg-grado').value;
+      
+      if(gradoV && (parseInt(gradoV) < 1 || parseInt(gradoV) > 10)){
+        Notification.error('Grado inválido, debe estar entre 1 y 10');
+      }
+
       
       const data = {
         email: document.getElementById('reg-email').value,

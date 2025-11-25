@@ -3,6 +3,7 @@ import { groupsAPI } from '../api/groups.js';
 import { sessionsAPI } from '../api/sessions.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
+import Chat from '../components/Chat.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
 import { joinGroupRooms } from '../utils/socketHelpers.js';
 
@@ -81,7 +82,25 @@ class DashboardView {
         html = this.renderEstudianteDashboard(groups, sessions);
       }
 
+      // Agregar chat para Estudiante, Profesor y Tutor
+      if (['Estudiante', 'Profesor', 'Tutor'].includes(user.role) && groups.length > 0) {
+        const chatHTML = Chat.render(groups);
+        if (chatHTML) {
+          html += chatHTML;
+        }
+      }
+
       content.innerHTML = html;
+
+      // Inicializar el chat después de renderizar
+      if (['Estudiante', 'Profesor', 'Tutor'].includes(user.role) && groups.length > 0) {
+        // Seleccionar el primer grupo por defecto y cargar sus mensajes
+        setTimeout(() => {
+          if (groups.length > 0) {
+            Chat.selectGroup(groups[0].id);
+          }
+        }, 100);
+      }
     } catch (error) {
       content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
     }

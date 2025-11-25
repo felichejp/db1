@@ -12,6 +12,7 @@ router.put('/:id', authenticateToken, validateId, groupController.updateGroup);
 router.delete('/:id', authenticateToken, validateId, groupController.deleteGroup);
 router.get('/:id/members', authenticateToken, validateId, groupController.getGroupMembers);
 router.post('/:id/members', authenticateToken, validateId, groupController.addGroupMember);
+router.post('/:id/members/bulk', authenticateToken, authorizeRole('Admin'), validateId, groupController.addMultipleGroupMembers);
 router.delete('/:id/members/:userId', authenticateToken, validateId, groupController.removeGroupMember);
 router.post('/:id/invitations', authenticateToken, validateId, groupController.sendGroupInvitation);
 router.get('/:id/invitations', authenticateToken, validateId, groupController.getGroupInvitations);

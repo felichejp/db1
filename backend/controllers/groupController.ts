@@ -16,17 +16,28 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
 
     let result;
     if (req.user.role === 'Admin') {
-      result = await query('SELECT * FROM groups ORDER BY "createdAt" DESC');
+      result = await query(
+        `SELECT g.*, u.nombre as "profesorName", u.email as "profesorEmail"
+         FROM groups g
+         LEFT JOIN users u ON g."profesorId" = u.id
+         ORDER BY g."createdAt" DESC`
+      );
     } else if (req.user.role === 'Profesor') {
       result = await query(
-        'SELECT * FROM groups WHERE "profesorId" = $1 ORDER BY "createdAt" DESC',
+        `SELECT g.*, u.nombre as "profesorName", u.email as "profesorEmail"
+         FROM groups g
+         LEFT JOIN users u ON g."profesorId" = u.id
+         WHERE g."profesorId" = $1 
+         ORDER BY g."createdAt" DESC`,
         [req.user.userId]
       );
     } else {
-      // Estudiante o Tutor: grupos donde es miembro
+      // Estudiante o Tutor: grupos donde es miembro, incluyendo info del profesor
       result = await query(
-        `SELECT g.* FROM groups g
+        `SELECT g.*, u.nombre as "profesorName", u.email as "profesorEmail"
+         FROM groups g
          JOIN group_members gm ON g.id = gm."groupId"
+         LEFT JOIN users u ON g."profesorId" = u.id
          WHERE gm."userId" = $1
          ORDER BY g."createdAt" DESC`,
         [req.user.userId]
@@ -257,6 +268,87 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error('Error en addGroupMember:', error);
     sendError(res, 'Error al agregar miembro', 500);
+  }
+}
+
+/**
+ * Agregar múltiples miembros al grupo (Admin)
+ */
+export async function addMultipleGroupMembers(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      sendError(res, 'userIds debe ser un array no vacío', 400);
+      return;
+    }
+
+    // Obtener información del grupo
+    const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
+    if (groupResult.rows.length === 0) {
+      sendError(res, 'Grupo no encontrado', 404);
+      return;
+    }
+    const groupName = groupResult.rows[0].nombre;
+
+    // Verificar límite de miembros
+    const countResult = await query(
+      'SELECT COUNT(*) as count FROM group_members WHERE "groupId" = $1',
+      [id]
+    );
+    const currentCount = parseInt(countResult.rows[0].count, 10);
+    
+    if (currentCount + userIds.length > 5) {
+      sendError(res, `El grupo no puede tener más de 5 miembros. Actual: ${currentCount}, intentando agregar: ${userIds.length}`, 400);
+      return;
+    }
+
+    const addedMembers = [];
+    const errors = [];
+
+    for (const userId of userIds) {
+      try {
+        const result = await query(
+          `INSERT INTO group_members ("groupId", "userId")
+           VALUES ($1, $2)
+           ON CONFLICT ("groupId", "userId") DO NOTHING
+           RETURNING *`,
+          [id, userId]
+        );
+
+        if (result.rows.length > 0) {
+          addedMembers.push(result.rows[0]);
+
+          // Crear notificación para el usuario agregado
+          await createAndEmitNotification({
+            userId: parseInt(userId, 10),
+            tipo: 'miembro_agregado',
+            titulo: 'Agregado a grupo',
+            mensaje: `Has sido agregado al grupo "${groupName}"`,
+            relacionId: parseInt(id, 10),
+            relacionTipo: 'group'
+          });
+        }
+      } catch (error) {
+        errors.push({ userId, error: error instanceof Error ? error.message : 'Error desconocido' });
+      }
+    }
+
+    // Emitir evento al grupo
+    emitToGroup(parseInt(id, 10), 'members_added', { 
+      groupId: parseInt(id, 10), 
+      userIds: addedMembers.map(m => m.userId)
+    });
+
+    sendSuccess(res, { 
+      added: addedMembers.length, 
+      members: addedMembers,
+      errors: errors.length > 0 ? errors : undefined
+    }, `${addedMembers.length} miembro(s) agregado(s) exitosamente`, 201);
+  } catch (error) {
+    console.error('Error en addMultipleGroupMembers:', error);
+    sendError(res, 'Error al agregar miembros', 500);
   }
 }
 

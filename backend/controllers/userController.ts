@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
-import { NotFoundError, AuthorizationError } from '../middleware/errorHandler';
+import { NotFoundError } from '../middleware/errorHandler';
 import { query } from '../config/database';
 
 /**
@@ -183,6 +183,36 @@ export async function getUserProfile(
   } catch (error) {
     console.error('Error en getUserProfile:', error);
     sendError(res, 'Error al obtener perfil', 500);
+  }
+}
+
+/**
+ * Obtener usuarios por rol (para asignar a grupos)
+ */
+export async function getUsersByRole(req: Request, res: Response): Promise<void> {
+  try {
+    const { role } = req.query;
+
+    if (!role || typeof role !== 'string') {
+      sendError(res, 'El rol es requerido', 400);
+      return;
+    }
+
+    const validRoles = ['Admin', 'Profesor', 'Tutor', 'Estudiante'];
+    if (!validRoles.includes(role)) {
+      sendError(res, 'Rol inválido', 400);
+      return;
+    }
+
+    const result = await query(
+      'SELECT id, email, nombre, role, grado FROM users WHERE role = $1 ORDER BY nombre ASC',
+      [role]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en getUsersByRole:', error);
+    sendError(res, 'Error al obtener usuarios', 500);
   }
 }
 

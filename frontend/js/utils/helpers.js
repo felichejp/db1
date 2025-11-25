@@ -30,9 +30,48 @@ export function formatDateTime(dateString, timeString) {
 
 /**
  * Formatea una hora
+ * Acepta string (HH:mm) o objeto Date
  */
-export function formatTime(timeString) {
-  return timeString.substring(0, 5); // HH:mm
+export function formatTime(timeStringOrDate) {
+  // Si es un objeto Date, formatearlo
+  if (timeStringOrDate instanceof Date) {
+    return timeStringOrDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  }
+  
+  // Si es un string, verificar que sea válido
+  if (typeof timeStringOrDate === 'string') {
+    // Si es un string de fecha/hora completo, extraer solo la hora
+    if (timeStringOrDate.includes('T') || timeStringOrDate.includes(' ')) {
+      const date = new Date(timeStringOrDate);
+      return date.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+    // Si ya es formato HH:mm, devolver los primeros 5 caracteres
+    return timeStringOrDate.substring(0, 5);
+  }
+  
+  // Si no es ni Date ni string, intentar convertirlo
+  try {
+    const date = new Date(timeStringOrDate);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+  } catch (e) {
+    console.error('Error formateando hora:', timeStringOrDate, e);
+  }
+  
+  return '--:--';
 }
 
 /**

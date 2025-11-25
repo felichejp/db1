@@ -27,7 +27,7 @@ export const validateRegister = [
   body('role')
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado debe ser entre 1 y 10'),
+  body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado debe ser entre 1 y 10'),  //El grado va de 1 a 10 es por ello que si dejabamos min: 1 iban a poder aumentarlo hasta el inifinito
   validate
 ];
 

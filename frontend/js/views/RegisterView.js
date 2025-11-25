@@ -29,6 +29,7 @@ class RegisterView {
               <label class="form-label" for="reg-nombre">Nombre</label>
               <input type="text" id="reg-nombre" class="form-input" required>
             </div>
+            <!-- Campo de rol eliminado - Solo se permiten estudiantes en el registro
             <div class="form-group">
               <label class="form-label" for="reg-role">Rol</label>
               <select id="reg-role" class="form-select" required>
@@ -39,6 +40,7 @@ class RegisterView {
                 <option value="Admin">Admin</option>
               </select>
             </div>
+            -->
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
               <input type="number" id="reg-grado" class="form-input" min="1" max="10">
@@ -60,15 +62,14 @@ class RegisterView {
         email: document.getElementById('reg-email').value,
         password: document.getElementById('reg-password').value,
         nombre: document.getElementById('reg-nombre').value,
-        role: document.getElementById('reg-role').value,
+        role: 'Estudiante', // Solo se permiten estudiantes en el registro
         grado: document.getElementById('reg-grado').value || null
       };
 
       const validation = validateForm(data, {
         email: { required: true, email: true },
         password: { required: true, password: true },
-        nombre: { required: true },
-        role: { required: true }
+        nombre: { required: true }
       });
 
       if (!validation.isValid) {

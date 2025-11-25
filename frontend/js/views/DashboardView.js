@@ -3,6 +3,7 @@ import { groupsAPI } from '../api/groups.js';
 import { sessionsAPI } from '../api/sessions.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
+import Chat from '../components/Chat.js'; //Sacamos nuevas funciones en este caso seria el chat
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
 import { joinGroupRooms } from '../utils/socketHelpers.js';
 
@@ -82,6 +83,15 @@ class DashboardView {
       }
 
       content.innerHTML = html;
+
+      // Renderizar el chat si el usuario tiene grupos (para estudiantes, profesores y tutores)
+      if (groups.length > 0 && (user.role === 'Estudiante' || user.role === 'Profesor' || user.role === 'Tutor')) {
+        // Esperar un momento para que el DOM se actualice
+        setTimeout(async () => {
+          await Chat.render(groups, 'chat-container');
+        }, 100);
+      }
+
     } catch (error) {
       content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
     }
@@ -100,10 +110,19 @@ class DashboardView {
   renderProfesorDashboard(groups, sessions) {
     return `
       <div>
-        <h2>Mis Grupos (${groups.length})</h2>
-        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
-        <h2 class="mt-3">Próximas Sesiones</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <!-- Sección superior: Grupos y Sesiones -->
+        <div>
+          <h2>Mis Grupos (${groups.length})</h2>
+          ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
+          <h2 class="mt-3">Próximas Sesiones</h2>
+          ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        </div>
+        
+        <!-- Sección inferior: Chat -->
+        <div class="mt-4">
+          <h2>Chat del Grupo</h2>
+          <div id="chat-container"></div>
+        </div>
       </div>
     `;
   }
@@ -120,10 +139,19 @@ class DashboardView {
   renderEstudianteDashboard(groups, sessions) {
     return `
       <div>
-        <h2>Mis Grupos (${groups.length})</h2>
-        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
-        <h2 class="mt-3">Próximas Sesiones</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <!-- Sección superior: Grupos y Sesiones -->
+        <div>
+          <h2>Mis Grupos (${groups.length})</h2>
+          ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
+          <h2 class="mt-3">Próximas Sesiones</h2>
+          ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        </div>
+        
+        <!-- Sección inferior: Chat -->
+        <div class="mt-4">
+          <h2>Chat del Grupo</h2>
+          <div id="chat-container"></div>
+        </div>
       </div>
     `;
   }

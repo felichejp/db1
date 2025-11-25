@@ -4,6 +4,8 @@ import { query } from '../config/database';
 import { emitToGroup, emitToUser } from '../config/socket';
 import { createAndEmitNotification } from '../utils/notifications';
 
+const MAX_GROUP_MEMBERS = 5;
+
 /**
  * Listar grupos (según rol)
  */
@@ -14,26 +16,105 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    let result;
-    if (req.user.role === 'Admin') {
-      result = await query('SELECT * FROM groups ORDER BY "createdAt" DESC');
-    } else if (req.user.role === 'Profesor') {
-      result = await query(
-        'SELECT * FROM groups WHERE "profesorId" = $1 ORDER BY "createdAt" DESC',
-        [req.user.userId]
-      );
+    const scope = (req.query.scope as string) || 'mine';
+    const includeMembers = req.query.includeMembers === 'true';
+    const role = req.user.role;
+
+    const membersSelect = includeMembers
+      ? `,
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', u.id,
+              'nombre', u.nombre,
+              'email', u.email,
+              'role', u.role,
+              'joinedAt', gm."joinedAt"
+            )
+          ) FILTER (WHERE u.id IS NOT NULL),
+          '[]'
+        ) AS members
+      `
+      : '';
+
+    const baseQuery = `
+      SELECT
+        g.id,
+        g.nombre,
+        g.descripcion,
+        g.estado,
+        g."profesorId",
+        COALESCE(p.nombre, 'Sin asignar') AS "profesorNombre",
+        g."createdAt",
+        g."updatedAt",
+        COALESCE(COUNT(gm.id), 0)::int AS "memberCount",
+        ${MAX_GROUP_MEMBERS}::int AS "maxMembers",
+        (${MAX_GROUP_MEMBERS} - COALESCE(COUNT(gm.id), 0))::int AS "availableSeats",
+        CASE WHEN COALESCE(COUNT(gm.id), 0) >= ${MAX_GROUP_MEMBERS} THEN true ELSE false END AS "isFull"
+        ${membersSelect}
+      FROM groups g
+      LEFT JOIN users p ON p.id = g."profesorId"
+      LEFT JOIN group_members gm ON gm."groupId" = g.id
+      LEFT JOIN users u ON u.id = gm."userId"
+    `;
+
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+
+    const getParamPlaceholder = () => `$${values.length + 1}`;
+
+    if (role === 'Admin') {
+      if (scope === 'available') {
+        const placeholder = getParamPlaceholder();
+        conditions.push(
+          `NOT EXISTS (SELECT 1 FROM group_members gm2 WHERE gm2."groupId" = g.id AND gm2."userId" = ${placeholder})`
+        );
+        values.push(req.user.userId);
+      }
+    } else if (role === 'Profesor') {
+      if (scope === 'available') {
+        const placeholder = getParamPlaceholder();
+        conditions.push(`(g."profesorId" IS NULL OR g."profesorId" <> ${placeholder})`);
+        values.push(req.user.userId);
+      } else {
+        const placeholder = getParamPlaceholder();
+        conditions.push(`g."profesorId" = ${placeholder}`);
+        values.push(req.user.userId);
+      }
     } else {
-      // Estudiante o Tutor: grupos donde es miembro
-      result = await query(
-        `SELECT g.* FROM groups g
-         JOIN group_members gm ON g.id = gm."groupId"
-         WHERE gm."userId" = $1
-         ORDER BY g."createdAt" DESC`,
-        [req.user.userId]
-      );
+      const placeholder = getParamPlaceholder();
+      if (scope === 'available') {
+        conditions.push(
+          `g.id NOT IN (
+            SELECT "groupId" FROM group_members WHERE "userId" = ${placeholder}
+          )`
+        );
+      } else {
+        conditions.push(
+          `g.id IN (
+            SELECT "groupId" FROM group_members WHERE "userId" = ${placeholder}
+          )`
+        );
+      }
+      values.push(req.user.userId);
     }
 
-    sendSuccess(res, result.rows);
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const groupByClause = 'GROUP BY g.id, p.nombre ORDER BY g."createdAt" DESC';
+
+    const queryText = `${baseQuery} ${whereClause} ${groupByClause}`;
+    const result = await query(queryText, values);
+
+    const data = result.rows.map((row: any) => {
+      if (!includeMembers) {
+        delete row.members;
+      } else {
+        row.members = row.members || [];
+      }
+      return row;
+    });
+
+    sendSuccess(res, data);
   } catch (error) {
     console.error('Error en getGroups:', error);
     sendError(res, 'Error al obtener grupos', 500);
@@ -436,9 +517,8 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
 
     // Agregar miembro
     await addGroupMember(
-      { params: { id: invitation.groupId }, body: { userId: req.user.userId } } as Request,
-      res,
-      () => {}
+      { params: { id: invitation.groupId }, body: { userId: req.user.userId } } as unknown as Request,
+      res
     );
 
     // Actualizar invitación

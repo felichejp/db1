@@ -1,8 +1,15 @@
 const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
 
 export const groupsAPI = {
-  async getAll() {
-    const response = await axios.get(`${API_BASE_URL}/api/groups`);
+  async getAll(params = {}) {
+    const response = await axios.get(`${API_BASE_URL}/api/groups`, { params });
+    return response.data;
+  },
+
+  async getAvailable() {
+    const response = await axios.get(`${API_BASE_URL}/api/groups`, {
+      params: { scope: 'available' }
+    });
     return response.data;
   },
 

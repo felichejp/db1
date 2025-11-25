@@ -57,6 +57,23 @@ export interface Group {
   updatedAt: Date;
 }
 
+export interface GroupMemberSummary {
+  id: number;
+  nombre: string;
+  email: string;
+  role: UserRole;
+  joinedAt: Date;
+}
+
+export interface GroupWithStats extends Group {
+  profesorNombre: string | null;
+  memberCount: number;
+  maxMembers: number;
+  availableSeats: number;
+  isFull: boolean;
+  members?: GroupMemberSummary[];
+}
+
 export interface Tutor {
   id: number;
   userId: number;

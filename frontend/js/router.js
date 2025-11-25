@@ -2,9 +2,11 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupsView from './views/GroupsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
+import ChatWidget from './components/ChatWidget.js';
 
 /**
  * Router hash-based
@@ -21,6 +23,7 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
     // TODO: Agregar más rutas cuando se implementen las vistas
 
     // Escuchar cambios de hash
@@ -82,6 +85,8 @@ class Router {
       Header.container.innerHTML = '';
       Sidebar.container.innerHTML = '';
     }
+
+    ChatWidget.updateVisibility(authService.isAuthenticated());
   }
 
   navigate(path) {

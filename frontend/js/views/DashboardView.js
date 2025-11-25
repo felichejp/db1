@@ -5,6 +5,7 @@ import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
 import { joinGroupRooms } from '../utils/socketHelpers.js';
+import ChatComponent from '../components/ChatComponent.js';
 
 /**
  * Vista de Dashboard
@@ -42,7 +43,7 @@ class DashboardView {
 
   async loadDashboardContent(user) {
     const content = document.getElementById('dashboard-content');
-    
+
     try {
       const [groupsRes, sessionsRes] = await Promise.allSettled([
         groupsAPI.getAll(),
@@ -50,11 +51,11 @@ class DashboardView {
       ]);
 
       // Manejar resultados (pueden ser errores 401)
-      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success 
-        ? groupsRes.value.data 
+      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success
+        ? groupsRes.value.data
         : [];
-      const sessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success 
-        ? sessionsRes.value.data 
+      const sessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success
+        ? sessionsRes.value.data
         : [];
 
       // Si hay errores 401, redirigir a login
@@ -82,6 +83,13 @@ class DashboardView {
       }
 
       content.innerHTML = html;
+
+      // Inicializar Chat si existe el contenedor
+      if (document.getElementById('chat-container')) {
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.innerHTML = ChatComponent.render();
+        ChatComponent.attachEvents();
+      }
     } catch (error) {
       content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
     }
@@ -104,6 +112,7 @@ class DashboardView {
         ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
         <h2 class="mt-3">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <div id="chat-container"></div>
       </div>
     `;
   }
@@ -124,6 +133,7 @@ class DashboardView {
         ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
         <h2 class="mt-3">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <div id="chat-container"></div>
       </div>
     `;
   }

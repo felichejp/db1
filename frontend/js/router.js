@@ -2,6 +2,7 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import GroupDetailView from './views/GroupDetailView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -12,16 +13,21 @@ import Sidebar from './components/Sidebar.js';
 class Router {
   constructor() {
     this.routes = new Map();
+    this.dynamicRoutes = [];
     this.currentView = null;
     this.init();
   }
 
   init() {
-    // Definir rutas
+    // Definir rutas estáticas
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
-    // TODO: Agregar más rutas cuando se implementen las vistas
+    
+    // Definir rutas dinámicas (con parámetros)
+    this.dynamicRoutes = [
+      { pattern: /^#\/groups\/(\d+)$/, view: GroupDetailView, protected: true }
+    ];
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -32,7 +38,24 @@ class Router {
 
   async handleRoute() {
     const hash = window.location.hash || '#/dashboard';
-    const route = this.routes.get(hash);
+    
+    // Primero intentar rutas estáticas
+    let route = this.routes.get(hash);
+    
+    // Si no hay ruta estática, buscar en rutas dinámicas
+    if (!route) {
+      for (const dynamicRoute of this.dynamicRoutes) {
+        const match = hash.match(dynamicRoute.pattern);
+        if (match) {
+          route = { 
+            view: dynamicRoute.view, 
+            protected: dynamicRoute.protected,
+            params: match.slice(1) // Capturar parámetros
+          };
+          break;
+        }
+      }
+    }
 
     // Si no hay ruta, mostrar 404
     if (!route) {

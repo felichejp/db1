@@ -5,31 +5,57 @@ import { messagesAPI } from '../api/messages.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
-import { joinGroupRooms, joinGroupRoom, leaveGroupRoom } from '../utils/socketHelpers.js';
+import { joinGroupRoom, leaveGroupRoom } from '../utils/socketHelpers.js';
 import socketService from '../services/socketService.js';
 
 /**
- * Vista de Dashboard
+ * Vista de Detalle de Grupo
  */
-class DashboardView {
+class GroupDetailView {
   constructor() {
-    this.currentChatGroupId = null;
+    this.currentGroupId = null;
     this.messages = [];
     this.socketListeners = new Map();
   }
+
   async render() {
+    // Limpiar recursos de la vista anterior si existe
+    this.cleanup();
+
     const user = authService.getCurrentUser();
-    if (!user) return;
+    if (!user) {
+      window.location.hash = '#/login';
+      return;
+    }
+
+    // Obtener groupId de la URL
+    const hash = window.location.hash;
+    const match = hash.match(/#\/groups\/(\d+)/);
+    if (!match) {
+      Notification.error('ID de grupo no válido');
+      window.location.hash = '#/dashboard';
+      return;
+    }
+
+    const groupId = parseInt(match[1], 10);
+    this.currentGroupId = groupId;
 
     const container = document.getElementById('view-container');
     container.innerHTML = `
       <div class="card">
         <div class="card__header">
-          <h1 class="card__title">Bienvenido, ${user.nombre}</h1>
-          <p class="text-muted">Rol: ${user.role}</p>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h1 class="card__title" id="group-title">Cargando grupo...</h1>
+              <p class="text-muted" id="group-subtitle"></p>
+            </div>
+            <a href="#/dashboard" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+          </div>
         </div>
         <div class="card__body">
-          <div id="dashboard-content">
+          <div id="group-detail-content">
             <div class="spinner"></div>
           </div>
         </div>
@@ -38,132 +64,171 @@ class DashboardView {
 
     try {
       Loading.show();
-      await this.loadDashboardContent(user);
+      await this.loadGroupData(groupId);
     } catch (error) {
-      Notification.error('Error al cargar el dashboard');
+      Notification.error('Error al cargar el grupo');
       console.error(error);
+      window.location.hash = '#/dashboard';
     } finally {
       Loading.hide();
     }
   }
 
-  async loadDashboardContent(user) {
-    const content = document.getElementById('dashboard-content');
-    
+  async loadGroupData(groupId) {
     try {
-      const [groupsRes, sessionsRes] = await Promise.allSettled([
-        groupsAPI.getAll(),
-        sessionsAPI.getAll()
+      const [groupRes, membersRes, sessionsRes, messagesRes] = await Promise.allSettled([
+        groupsAPI.getById(groupId),
+        groupsAPI.getMembers(groupId),
+        sessionsAPI.getAll(),
+        messagesAPI.getByGroup(groupId)
       ]);
 
-      // Manejar resultados (pueden ser errores 401)
-      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success 
-        ? groupsRes.value.data 
-        : [];
-      const sessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success 
-        ? sessionsRes.value.data 
-        : [];
+      // Manejar errores
+      if (groupRes.status === 'rejected') {
+        if (groupRes.reason?.response?.status === 404) {
+          Notification.error('Grupo no encontrado');
+          window.location.hash = '#/dashboard';
+          return;
+        }
+        if (groupRes.reason?.response?.status === 401) {
+          authService.logout();
+          window.location.hash = '#/login';
+          return;
+        }
+        throw groupRes.reason;
+      }
 
-      // Si hay errores 401, redirigir a login
-      if (groupsRes.status === 'rejected' && groupsRes.reason?.response?.status === 401) {
-        authService.logout();
-        window.location.hash = '#/login';
+      const group = groupRes.value.success ? groupRes.value.data : null;
+      if (!group) {
+        Notification.error('No se pudo cargar el grupo');
+        window.location.hash = '#/dashboard';
         return;
       }
 
-      // Unirse automáticamente a rooms de grupos para recibir eventos en tiempo real
-      if (groups.length > 0) {
-        await joinGroupRooms(groups);
+      const members = membersRes.status === 'fulfilled' && membersRes.value.success
+        ? membersRes.value.data
+        : [];
+      
+      const allSessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success
+        ? sessionsRes.value.data
+        : [];
+      
+      // Filtrar sesiones del grupo
+      const groupSessions = allSessions.filter(s => s.groupId === groupId);
+
+      const messages = messagesRes.status === 'fulfilled' && messagesRes.value.success
+        ? messagesRes.value.data
+        : [];
+
+      this.messages = messages;
+
+      // Actualizar título
+      document.getElementById('group-title').textContent = group.nombre;
+      document.getElementById('group-subtitle').innerHTML = `
+        Estado: <span class="badge badge--${getStatusColor(group.estado)}">${getStatusName(group.estado)}</span>
+      `;
+
+      // Renderizar contenido
+      const content = document.getElementById('group-detail-content');
+      content.innerHTML = this.renderGroupDetail(group, members, groupSessions, messages);
+
+      // Scroll al inicio de la página
+      window.scrollTo(0, 0);
+      const container = document.getElementById('view-container');
+      if (container) {
+        container.scrollTop = 0;
       }
 
-      let html = '';
+      // Configurar Socket.IO para el chat
+      this.setupChatSocketListeners(groupId);
+      joinGroupRoom(groupId);
 
-      if (user.role === 'Admin') {
-        html = this.renderAdminDashboard(groups, sessions);
-      } else if (user.role === 'Profesor') {
-        html = this.renderProfesorDashboard(groups, sessions);
-      } else if (user.role === 'Tutor') {
-        html = this.renderTutorDashboard(groups, sessions);
-      } else {
-        html = this.renderEstudianteDashboard(groups, sessions);
-      }
-
-      content.innerHTML = html;
+      // Configurar eventos del chat
+      this.setupChatInputEvents(groupId);
     } catch (error) {
-      content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
+      console.error('Error al cargar datos del grupo:', error);
+      throw error;
     }
   }
 
-  renderAdminDashboard(groups, sessions) {
+  renderGroupDetail(group, members, sessions, messages) {
     return `
-      <div>
-        <h2>Estadísticas</h2>
-        <p>Grupos: ${groups.length}</p>
-        <p>Sesiones: ${sessions.length}</p>
+      <div class="group-detail">
+        <!-- Información del Grupo -->
+        <div class="group-info-section">
+          <h2>Información del Grupo</h2>
+          <div class="group-info-card">
+            <div class="info-row">
+              <span class="info-label">Nombre:</span>
+              <span class="info-value">${this.escapeHtml(group.nombre)}</span>
+            </div>
+            ${group.descripcion ? `
+              <div class="info-row">
+                <span class="info-label">Descripción:</span>
+                <span class="info-value">${this.escapeHtml(group.descripcion)}</span>
+              </div>
+            ` : ''}
+            ${group.profesorNombre ? `
+              <div class="info-row">
+                <span class="info-label">Profesor:</span>
+                <span class="info-value">${this.escapeHtml(group.profesorNombre)}${group.profesorEmail ? ` (${this.escapeHtml(group.profesorEmail)})` : ''}</span>
+              </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">Estado:</span>
+              <span class="info-value">
+                <span class="badge badge--${getStatusColor(group.estado)}">${getStatusName(group.estado)}</span>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Creado:</span>
+              <span class="info-value">${formatDate(group.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Miembros del Grupo -->
+        <div class="group-members-section">
+          <h2>Miembros (${members.length})</h2>
+          ${members.length > 0 ? this.renderMembersList(members) : '<p class="text-muted">No hay miembros en el grupo</p>'}
+        </div>
+
+        <!-- Sesiones del Grupo -->
+        <div class="group-sessions-section">
+          <h2>Sesiones (${sessions.length})</h2>
+          ${sessions.length > 0 ? this.renderSessionsList(sessions) : '<p class="text-muted">No hay sesiones programadas para este grupo</p>'}
+        </div>
+
+        <!-- Chat del Grupo -->
+        <div class="group-chat-section">
+          <h2>Chat del Grupo</h2>
+          ${this.renderGroupChat(group.id, group.nombre, messages)}
+        </div>
       </div>
     `;
   }
 
-  renderProfesorDashboard(groups, sessions) {
-    return `
-      <div>
-        <h2>Mis Grupos (${groups.length})</h2>
-        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
-        <h2 class="mt-3">Próximas Sesiones</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
-      </div>
-    `;
-  }
-
-  renderTutorDashboard(groups, sessions) {
-    return `
-      <div>
-        <h2>Mis Sesiones (${sessions.length})</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No tienes sesiones asignadas</p>'}
-      </div>
-    `;
-  }
-
-  renderEstudianteDashboard(groups, sessions) {
-    return `
-      <div>
-        <h2>Mis Grupos (${groups.length})</h2>
-        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
-        <h2 class="mt-3">Próximas Sesiones</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
-      </div>
-    `;
-  }
-
-  renderGroupsList(groups) {
+  renderMembersList(members) {
     return `
       <div class="table-container mt-2">
         <table class="table">
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Grado</th>
+              <th>Se unió</th>
             </tr>
           </thead>
           <tbody>
-            ${groups.map(group => `
+            ${members.map(member => `
               <tr>
-                <td>${group.nombre}</td>
-                <td><span class="badge badge--${getStatusColor(group.estado)}">${getStatusName(group.estado)}</span></td>
-                <td>
-                  <div style="display: flex; gap: 0.5rem;">
-                    <a href="#/groups/${group.id}" class="btn btn-secondary btn-sm">
-                      Ver
-                    </a>
-                    <button 
-                      class="btn btn-secondary btn-sm" 
-                      onclick="dashboardView.openGroupChat(${group.id}, '${group.nombre.replace(/'/g, "\\'")}')"
-                    >
-                      Abrir Chat
-                    </button>
-                  </div>
-                </td>
+                <td>${this.escapeHtml(member.nombre)}</td>
+                <td>${this.escapeHtml(member.email)}</td>
+                <td><span class="badge badge--info">${member.role}</span></td>
+                <td>${member.grado || '-'}</td>
+                <td>${formatDate(member.joinedAt)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -189,7 +254,7 @@ class DashboardView {
               <tr>
                 <td>${formatDate(session.fecha)}</td>
                 <td>${formatTime(session.horaInicio)} - ${formatTime(session.horaFin)}</td>
-                <td>${session.tema || '-'}</td>
+                <td>${this.escapeHtml(session.tema || '-')}</td>
                 <td><span class="badge badge--${getStatusColor(session.estado)}">${getStatusName(session.estado)}</span></td>
               </tr>
             `).join('')}
@@ -199,55 +264,23 @@ class DashboardView {
     `;
   }
 
-  // Método para abrir el chat de un grupo
-  async openGroupChat(groupId, groupName) {
-    this.currentChatGroupId = groupId;
-    
-    // Limpiar listeners anteriores si hay un chat abierto
-    this.cleanupChatListeners();
-    
-    // Renderizar el chat
-    await this.renderGroupChat(groupId, groupName);
-    
-    // Cargar mensajes
-    await this.loadChatMessages(groupId);
-    
-    // Configurar Socket.IO
-    this.setupChatSocketListeners(groupId);
-    
-    // Unirse al room del grupo
-    joinGroupRoom(groupId);
-  }
-
-  // Renderizar el componente de chat
-  async renderGroupChat(groupId, groupName) {
-    const content = document.getElementById('dashboard-content');
-    
-    // Crear contenedor del chat si no existe
-    let chatContainer = document.getElementById('group-chat-container');
-    if (!chatContainer) {
-      chatContainer = document.createElement('div');
-      chatContainer.id = 'group-chat-container';
-      content.appendChild(chatContainer);
-    }
-    
-    chatContainer.innerHTML = `
+  renderGroupChat(groupId, groupName, messages) {
+    return `
       <div class="chat-wrapper">
         <div class="chat-header">
           <div class="chat-header__info">
             <h3>Chat: ${this.escapeHtml(groupName)}</h3>
             <span class="chat-group-id">Grupo #${groupId}</span>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="dashboardView.closeGroupChat()">
-            Cerrar Chat
-          </button>
         </div>
         
         <div class="chat-messages" id="chat-messages-${groupId}">
-          <div class="chat-loading">
-            <div class="spinner"></div>
-            <p>Cargando mensajes...</p>
-          </div>
+          ${messages.length === 0 ? `
+            <div class="chat-empty">
+              <i class="fas fa-comments"></i>
+              <p>No hay mensajes aún. ¡Sé el primero en escribir!</p>
+            </div>
+          ` : this.renderMessages(groupId, messages)}
         </div>
         
         <div class="chat-input-container">
@@ -260,7 +293,7 @@ class DashboardView {
             ></textarea>
             <button 
               class="btn btn-primary chat-send-btn" 
-              onclick="dashboardView.sendChatMessage(${groupId})"
+              onclick="groupDetailView.sendChatMessage(${groupId})"
               id="chat-send-btn-${groupId}"
             >
               <i class="fas fa-paper-plane"></i> Enviar
@@ -272,55 +305,13 @@ class DashboardView {
         </div>
       </div>
     `;
-    
-    // Configurar eventos del input
-    this.setupChatInputEvents(groupId);
-    
-    // Scroll al final
-    setTimeout(() => {
-      this.scrollChatToBottom(groupId);
-    }, 100);
   }
 
-  // Cargar mensajes del grupo
-  async loadChatMessages(groupId) {
-    try {
-      const response = await messagesAPI.getByGroup(groupId);
-      
-      if (response.success && response.data) {
-        this.messages = response.data;
-        this.renderMessages(groupId, this.messages);
-      } else {
-        this.messages = [];
-        this.renderMessages(groupId, []);
-      }
-    } catch (error) {
-      console.error('Error al cargar mensajes:', error);
-      Notification.error('Error al cargar mensajes del chat');
-      this.messages = [];
-      this.renderMessages(groupId, []);
-    }
-  }
-
-  // Renderizar mensajes
   renderMessages(groupId, messages) {
-    const messagesContainer = document.getElementById(`chat-messages-${groupId}`);
-    if (!messagesContainer) return;
-    
     const user = authService.getCurrentUser();
-    if (!user) return;
-    
-    if (messages.length === 0) {
-      messagesContainer.innerHTML = `
-        <div class="chat-empty">
-          <i class="fas fa-comments"></i>
-          <p>No hay mensajes aún. ¡Sé el primero en escribir!</p>
-        </div>
-      `;
-      return;
-    }
-    
-    messagesContainer.innerHTML = messages.map(message => {
+    if (!user) return '';
+
+    return messages.map(message => {
       const isOwnMessage = message.senderId === user.userId || message.senderId === user.id;
       const messageTime = this.formatMessageTime(message.createdAt);
       const messageDate = this.formatMessageDate(message.createdAt);
@@ -337,7 +328,7 @@ class DashboardView {
           ${isOwnMessage ? `
             <button 
               class="message__delete" 
-              onclick="dashboardView.deleteMessage(${message.id}, ${groupId})"
+              onclick="groupDetailView.deleteMessage(${message.id}, ${groupId})"
               title="Eliminar mensaje"
             >
               <i class="fas fa-trash"></i>
@@ -346,12 +337,8 @@ class DashboardView {
         </div>
       `;
     }).join('');
-    
-    // Scroll al final
-    this.scrollChatToBottom(groupId);
   }
 
-  // Enviar mensaje
   async sendChatMessage(groupId) {
     const input = document.getElementById(`chat-input-${groupId}`);
     const sendBtn = document.getElementById(`chat-send-btn-${groupId}`);
@@ -364,7 +351,6 @@ class DashboardView {
       return;
     }
     
-    // Deshabilitar botón e input mientras se envía
     sendBtn.disabled = true;
     input.disabled = true;
     
@@ -376,16 +362,14 @@ class DashboardView {
       });
       
       if (response.success) {
-        // Limpiar input
         input.value = '';
         input.style.height = 'auto';
         
-        // El mensaje se agregará automáticamente vía Socket.IO
-        // Pero también lo agregamos localmente para feedback inmediato
         const newMessage = response.data;
         if (newMessage) {
           this.messages.push(newMessage);
-          this.renderMessages(groupId, this.messages);
+          // Scroll al final cuando se envía un mensaje
+          this.updateChatMessages(groupId, true);
         }
       } else {
         Notification.error(response.message || 'Error al enviar mensaje');
@@ -400,7 +384,6 @@ class DashboardView {
     }
   }
 
-  // Eliminar mensaje
   async deleteMessage(messageId, groupId) {
     if (!confirm('¿Estás seguro de que deseas eliminar este mensaje?')) {
       return;
@@ -410,9 +393,9 @@ class DashboardView {
       const response = await messagesAPI.delete(messageId);
       
       if (response.success) {
-        // Remover mensaje de la lista local
         this.messages = this.messages.filter(m => m.id !== messageId);
-        this.renderMessages(groupId, this.messages);
+        // No hacer scroll al eliminar mensajes
+        this.updateChatMessages(groupId, false);
         Notification.success('Mensaje eliminado');
       } else {
         Notification.error(response.message || 'Error al eliminar mensaje');
@@ -423,38 +406,53 @@ class DashboardView {
     }
   }
 
-  // Configurar listeners de Socket.IO
+  updateChatMessages(groupId, shouldScroll = false) {
+    const messagesContainer = document.getElementById(`chat-messages-${groupId}`);
+    if (messagesContainer) {
+      if (this.messages.length === 0) {
+        messagesContainer.innerHTML = `
+          <div class="chat-empty">
+            <i class="fas fa-comments"></i>
+            <p>No hay mensajes aún. ¡Sé el primero en escribir!</p>
+          </div>
+        `;
+      } else {
+        messagesContainer.innerHTML = this.renderMessages(groupId, this.messages);
+      }
+      // Solo hacer scroll si se solicita explícitamente (nuevos mensajes en tiempo real)
+      if (shouldScroll) {
+        this.scrollChatToBottom(groupId);
+      }
+    }
+  }
+
   setupChatSocketListeners(groupId) {
-    // Listener para nuevos mensajes
     const newMessageHandler = (message) => {
       if (message.groupId === groupId) {
-        // Verificar si el mensaje ya existe (para evitar duplicados)
         const exists = this.messages.some(m => m.id === message.id);
         if (!exists) {
           this.messages.push(message);
-          this.renderMessages(groupId, this.messages);
+          // Scroll al final solo para nuevos mensajes en tiempo real
+          this.updateChatMessages(groupId, true);
         }
       }
     };
     
-    // Listener para mensajes eliminados
     const deletedMessageHandler = (data) => {
       if (data.groupId === groupId || this.messages.some(m => m.id === data.messageId)) {
         this.messages = this.messages.filter(m => m.id !== data.messageId);
-        this.renderMessages(groupId, this.messages);
+        // No hacer scroll al eliminar mensajes
+        this.updateChatMessages(groupId, false);
       }
     };
     
-    // Registrar listeners
     socketService.on('new_message', newMessageHandler);
     socketService.on('message_deleted', deletedMessageHandler);
     
-    // Guardar referencias para poder limpiarlos después
     this.socketListeners.set('new_message', newMessageHandler);
     this.socketListeners.set('message_deleted', deletedMessageHandler);
   }
 
-  // Limpiar listeners de Socket.IO
   cleanupChatListeners() {
     this.socketListeners.forEach((handler, event) => {
       socketService.off(event);
@@ -462,37 +460,10 @@ class DashboardView {
     this.socketListeners.clear();
   }
 
-  // Cerrar chat
-  closeGroupChat() {
-    const chatContainer = document.getElementById('group-chat-container');
-    if (chatContainer) {
-      chatContainer.remove();
-    }
-    
-    // Limpiar listeners
-    this.cleanupChatListeners();
-    
-    // Salir del room
-    if (this.currentChatGroupId) {
-      leaveGroupRoom(this.currentChatGroupId);
-      this.currentChatGroupId = null;
-    }
-    
-    this.messages = [];
-    
-    // Recargar dashboard
-    const user = authService.getCurrentUser();
-    if (user) {
-      this.loadDashboardContent(user);
-    }
-  }
-
-  // Configurar eventos del input de chat
   setupChatInputEvents(groupId) {
     const input = document.getElementById(`chat-input-${groupId}`);
     if (!input) return;
     
-    // Enviar con Enter (Shift+Enter para nueva línea)
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -500,17 +471,15 @@ class DashboardView {
       }
     });
     
-    // Auto-resize del textarea
     input.addEventListener('input', () => {
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 150) + 'px';
     });
     
-    // Focus automático
-    input.focus();
+    // No hacer focus automático ni scroll al cargar la página
+    // El usuario puede hacer scroll al chat si lo desea
   }
 
-  // Scroll al final del chat
   scrollChatToBottom(groupId) {
     const messagesContainer = document.getElementById(`chat-messages-${groupId}`);
     if (messagesContainer) {
@@ -518,7 +487,6 @@ class DashboardView {
     }
   }
 
-  // Formatear hora del mensaje
   formatMessageTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
@@ -527,28 +495,23 @@ class DashboardView {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
     
-    // Si es hoy, mostrar solo la hora
     if (diffDays === 0) {
       if (diffMins < 1) return 'Ahora';
       if (diffMins < 60) return `Hace ${diffMins} min`;
       if (diffHours < 24) return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     }
     
-    // Si es ayer
     if (diffDays === 1) {
       return `Ayer ${date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
     }
     
-    // Si es esta semana
     if (diffDays < 7) {
       return date.toLocaleDateString('es-ES', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
     }
     
-    // Más de una semana
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
-  // Formatear fecha completa del mensaje
   formatMessageDate(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleString('es-ES', {
@@ -560,18 +523,30 @@ class DashboardView {
     });
   }
 
-  // Escapar HTML para prevenir XSS
   escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
+
+  cleanup() {
+    // Limpiar listeners de Socket.IO
+    this.cleanupChatListeners();
+    
+    // Salir del room del grupo
+    if (this.currentGroupId) {
+      leaveGroupRoom(this.currentGroupId);
+    }
+    
+    // Limpiar datos
+    this.currentGroupId = null;
+    this.messages = [];
+  }
 }
 
-const dashboardView = new DashboardView();
-// Hacer dashboardView disponible globalmente para los onclick
-window.dashboardView = dashboardView;
+const groupDetailView = new GroupDetailView();
+// Hacer groupDetailView disponible globalmente para los onclick
+window.groupDetailView = groupDetailView;
 
-export default dashboardView;
-
+export default groupDetailView;
 

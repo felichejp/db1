@@ -69,7 +69,17 @@ export async function getGroupById(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
 
-    const result = await query('SELECT * FROM groups WHERE id = $1', [id]);
+    const result = await query(
+      `SELECT 
+        g.*,
+        u.id as "profesorUserId",
+        u.nombre as "profesorNombre",
+        u.email as "profesorEmail"
+      FROM groups g
+      LEFT JOIN users u ON g."profesorId" = u.id
+      WHERE g.id = $1`,
+      [id]
+    );
 
     if (result.rows.length === 0) {
       sendError(res, 'Grupo no encontrado', 404);

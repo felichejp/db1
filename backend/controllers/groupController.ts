@@ -180,7 +180,8 @@ export async function getGroupMembers(req: Request, res: Response): Promise<void
   try {
     const { id } = req.params;
 
-    const result = await query(
+    // Obtener miembros de la tabla group_members
+    const membersResult = await query(
       `SELECT u.id, u.email, u.nombre, u.role, u.grado, gm."joinedAt"
        FROM group_members gm
        JOIN users u ON gm."userId" = u.id
@@ -189,7 +190,34 @@ export async function getGroupMembers(req: Request, res: Response): Promise<void
       [id]
     );
 
-    sendSuccess(res, result.rows);
+    // Obtener información del profesor si existe
+    const groupResult = await query(
+      `SELECT g."profesorId", u.id, u.email, u.nombre, u.role, u.grado, g."createdAt" as "joinedAt"
+       FROM groups g
+       LEFT JOIN users u ON g."profesorId" = u.id
+       WHERE g.id = $1 AND g."profesorId" IS NOT NULL`,
+      [id]
+    );
+
+    let members = [...membersResult.rows];
+
+    // Agregar el profesor si existe y no está ya en la lista
+    if (groupResult.rows.length > 0 && groupResult.rows[0].profesorId) {
+      const profesor = groupResult.rows[0];
+      const profesorExists = members.some(m => m.id === profesor.profesorId);
+      if (!profesorExists && profesor.id) {
+        members.push({
+          id: profesor.id,
+          email: profesor.email,
+          nombre: profesor.nombre,
+          role: profesor.role,
+          grado: profesor.grado,
+          joinedAt: profesor.joinedAt
+        });
+      }
+    }
+
+    sendSuccess(res, members);
   } catch (error) {
     console.error('Error en getGroupMembers:', error);
     sendError(res, 'Error al obtener miembros', 500);

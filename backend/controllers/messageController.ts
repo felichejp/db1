@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
-import { emitToGroup } from '../config/socket';
+import { emitToGroup, emitToUser } from '../config/socket';
 
 export async function getGroupMessages(req: Request, res: Response): Promise<void> {
   try {
@@ -30,6 +30,21 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
     const { groupId, content, tipo } = req.body;
 
+    // Obtener información del grupo y del remitente
+    const [groupResult, senderResult] = await Promise.all([
+      query('SELECT nombre FROM groups WHERE id = $1', [groupId]),
+      query('SELECT nombre FROM users WHERE id = $1', [req.user.userId])
+    ]);
+
+    if (groupResult.rows.length === 0) {
+      sendError(res, 'Grupo no encontrado', 404);
+      return;
+    }
+
+    const groupName = groupResult.rows[0].nombre;
+    const senderName = senderResult.rows[0]?.nombre || req.user.email;
+
+    // Crear el mensaje
     const result = await query(
       `INSERT INTO messages ("senderId", "groupId", content, tipo)
        VALUES ($1, $2, $3, $4)
@@ -37,8 +52,59 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
       [req.user.userId, groupId, content, tipo || 'texto']
     );
 
-    emitToGroup(groupId, 'new_message', result.rows[0]);
-    sendSuccess(res, result.rows[0], 'Mensaje enviado', 201);
+    const message = result.rows[0];
+    
+    // Agregar información del remitente al mensaje
+    const messageWithSender = {
+      ...message,
+      senderName: senderName
+    };
+
+    // Emitir mensaje a todos los miembros del grupo
+    emitToGroup(groupId, 'new_message', messageWithSender);
+
+    // Obtener todos los miembros del grupo (excepto el remitente)
+    const membersResult = await query(
+      `SELECT "userId" FROM group_members WHERE "groupId" = $1 AND "userId" != $2
+       UNION
+       SELECT "profesorId" as "userId" FROM groups WHERE id = $1 AND "profesorId" IS NOT NULL AND "profesorId" != $2`,
+      [groupId, req.user.userId]
+    );
+
+    const memberIds = membersResult.rows.map(row => row.userId);
+
+    // Crear notificaciones para cada miembro
+    for (const memberId of memberIds) {
+      try {
+        await query(
+          `INSERT INTO notifications ("userId", tipo, titulo, mensaje, "relacionId", "relacionTipo")
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            memberId,
+            'mensaje_nuevo',
+            `Nuevo mensaje en ${groupName}`,
+            `${senderName}: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
+            groupId,
+            'group'
+          ]
+        );
+
+        // Enviar notificación por Socket.IO
+        emitToUser(memberId, 'message_notification', {
+          groupId: groupId,
+          groupName: groupName,
+          senderId: req.user.userId,
+          senderName: senderName,
+          messageId: message.id,
+          content: content.substring(0, 100)
+        });
+      } catch (notifError) {
+        console.error(`Error creando notificación para usuario ${memberId}:`, notifError);
+        // Continuar con los demás miembros aunque falle uno
+      }
+    }
+
+    sendSuccess(res, messageWithSender, 'Mensaje enviado', 201);
   } catch (error) {
     console.error('Error en createMessage:', error);
     sendError(res, 'Error al enviar mensaje', 500);

@@ -13,18 +13,26 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const baseSelect = `
+      SELECT g.*, u.nombre as "profesorNombre", u.email as "profesorEmail"
+      FROM groups g
+      LEFT JOIN users u ON g."profesorId" = u.id
+    `;
+
     let result;
     if (req.user.role === 'Admin') {
-      result = await query('SELECT * FROM groups ORDER BY "createdAt" DESC');
+      result = await query(`${baseSelect} ORDER BY g."createdAt" DESC`);
     } else if (req.user.role === 'Profesor') {
       result = await query(
-        'SELECT * FROM groups WHERE "profesorId" = $1 ORDER BY "createdAt" DESC',
+        `${baseSelect}
+         WHERE g."profesorId" = $1
+         ORDER BY g."createdAt" DESC`,
         [req.user.userId]
       );
     } else {
       // Estudiante o Tutor: grupos donde es miembro
       result = await query(
-        `SELECT g.* FROM groups g
+        `${baseSelect}
          JOIN group_members gm ON g.id = gm."groupId"
          WHERE gm."userId" = $1
          ORDER BY g."createdAt" DESC`,
@@ -54,7 +62,15 @@ export async function createGroup(req: Request, res: Response): Promise<void> {
       [nombre, descripcion || null, finalProfesorId]
     );
 
-    sendSuccess(res, result.rows[0], 'Grupo creado exitosamente', 201);
+    const createdGroup = await query(
+      `SELECT g.*, u.nombre as "profesorNombre", u.email as "profesorEmail"
+       FROM groups g
+       LEFT JOIN users u ON g."profesorId" = u.id
+       WHERE g.id = $1`,
+      [result.rows[0].id]
+    );
+
+    sendSuccess(res, createdGroup.rows[0], 'Grupo creado exitosamente', 201);
   } catch (error) {
     console.error('Error en createGroup:', error);
     sendError(res, 'Error al crear grupo', 500);
@@ -68,7 +84,13 @@ export async function getGroupById(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
 
-    const result = await query('SELECT * FROM groups WHERE id = $1', [id]);
+    const result = await query(
+      `SELECT g.*, u.nombre as "profesorNombre", u.email as "profesorEmail"
+       FROM groups g
+       LEFT JOIN users u ON g."profesorId" = u.id
+       WHERE g.id = $1`,
+      [id]
+    );
 
     if (result.rows.length === 0) {
       sendError(res, 'Grupo no encontrado', 404);
@@ -133,8 +155,16 @@ export async function updateGroup(req: Request, res: Response): Promise<void> {
       values
     );
 
-    emitToGroup(parseInt(id, 10), 'group_updated', result.rows[0]);
-    sendSuccess(res, result.rows[0], 'Grupo actualizado exitosamente');
+    const updatedGroup = await query(
+      `SELECT g.*, u.nombre as "profesorNombre", u.email as "profesorEmail"
+       FROM groups g
+       LEFT JOIN users u ON g."profesorId" = u.id
+       WHERE g.id = $1`,
+      [result.rows[0].id]
+    );
+
+    emitToGroup(parseInt(id, 10), 'group_updated', updatedGroup.rows[0]);
+    sendSuccess(res, updatedGroup.rows[0], 'Grupo actualizado exitosamente');
   } catch (error) {
     console.error('Error en updateGroup:', error);
     sendError(res, 'Error al actualizar grupo', 500);

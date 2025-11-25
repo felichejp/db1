@@ -95,41 +95,41 @@ class GroupsView {
 
   renderGroupsList(groups) {
     return `
-      <div class="table-container">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Estado</th>
-              <th>Miembros</th>
-              <th>Creado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${groups.map(group => `
-              <tr>
-                <td><strong>${group.nombre || 'Sin nombre'}</strong></td>
-                <td>${group.descripcion || '-'}</td>
-                <td>
-                  <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
-                    ${getStatusName(group.estado || 'activo')}
-                  </span>
-                </td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="window.location.hash='#/groups/${group.id}'">
-                    Ver miembros
-                  </button>
-                </td>
-                <td>${formatDate(group.createdAt)}</td>
-                <td>
-                  <a href="#/groups/${group.id}" class="btn btn-primary btn-sm">Ver Detalles</a>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+      <div class="group-card-grid">
+        ${groups.map(group => {
+          const responsibleName = this.getGroupResponsibleName(group);
+          return `
+          <article class="group-card">
+            <div class="group-card__header">
+              <div>
+                <p class="group-card__label">Grupo</p>
+                <h3 class="group-card__title">${group.nombre || 'Sin nombre'}</h3>
+              </div>
+              <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
+                ${getStatusName(group.estado || 'activo')}
+              </span>
+            </div>
+            <p class="group-card__description">
+              ${group.descripcion || 'Este grupo aún no tiene descripción.'}
+            </p>
+            <div class="group-card__meta">
+              <div>
+                <p class="group-card__meta-label">Creado</p>
+                <p class="group-card__meta-value">${formatDate(group.createdAt)}</p>
+              </div>
+              <div>
+                <p class="group-card__meta-label">Tutor / Profesor</p>
+                <p class="group-card__meta-value">${responsibleName}</p>
+              </div>
+            </div>
+            <div class="group-card__actions">
+              <a href="#/groups/${group.id}" class="btn btn-primary btn-sm btn-block">
+                Ver detalles
+              </a>
+            </div>
+          </article>
+        `;
+        }).join('')}
       </div>
     `;
   }
@@ -350,89 +350,121 @@ class GroupsView {
                       authService.getCurrentUser()?.role === 'Admin';
 
     return `
-      <div>
-        <div class="mb-3">
-          <h3>Información del Grupo</h3>
-          <p><strong>Descripción:</strong> ${group.descripcion || 'Sin descripción'}</p>
-          <p><strong>Estado:</strong> 
-            <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
-              ${getStatusName(group.estado || 'activo')}
-            </span>
-          </p>
-          <p><strong>Creado:</strong> ${formatDate(group.createdAt)}</p>
-        </div>
-
-        <div class="mb-3">
-          <h3>Miembros (${members.length}/5)</h3>
-          ${members.length === 0 ? 
-            '<p class="text-muted">No hay miembros en este grupo</p>' :
-            `
-            <div class="table-container">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Se unió</th>
-                    ${canManage ? '<th>Acciones</th>' : ''}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${members.map(member => `
-                    <tr>
-                      <td>${member.nombre}</td>
-                      <td>${member.email}</td>
-                      <td>${member.role}</td>
-                      <td>${formatDate(member.joinedAt)}</td>
-                      ${canManage ? `
-                        <td>
-                          <button class="btn btn-danger btn-sm" 
-                                  onclick="GroupsView.removeMember(${group.id}, ${member.id})">
-                            Eliminar
-                          </button>
-                        </td>
-                      ` : ''}
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-            `
-          }
-        </div>
-
-        ${canManage && invitations.length > 0 ? `
-          <div class="mb-3">
-            <h3>Invitaciones Pendientes</h3>
-            <div class="table-container">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Email</th>
-                    <th>Estado</th>
-                    <th>Enviada</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${invitations.map(inv => `
-                    <tr>
-                      <td>${inv.invitedUserName || '-'}</td>
-                      <td>${inv.email || '-'}</td>
-                      <td>
-                        <span class="badge badge--${getStatusColor(inv.estado || 'pendiente')}">
-                          ${getStatusName(inv.estado || 'pendiente')}
-                        </span>
-                      </td>
-                      <td>${formatDate(inv.createdAt)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
+      <div class="group-details-layout">
+        <section class="group-panel">
+          <div class="group-panel__intro">
+            <p class="group-panel__label">Grupo</p>
+            <h2 class="group-panel__title">${group.nombre || 'Sin nombre'}</h2>
+            <p class="group-panel__subtitle">Contenido próximamente...</p>
           </div>
-        ` : ''}
+          <div class="group-panel__section">
+            <h3>Información general</h3>
+            <p><strong>Descripción:</strong> ${group.descripcion || 'Sin descripción'}</p>
+            <p>
+              <strong>Estado:</strong> 
+              <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
+                ${getStatusName(group.estado || 'activo')}
+              </span>
+            </p>
+            <p><strong>Responsable:</strong> ${this.getGroupResponsibleName(group)}</p>
+            <p><strong>Creado:</strong> ${formatDate(group.createdAt)}</p>
+          </div>
+
+          <div class="group-panel__section">
+            <h3>Miembros (${members.length}/5)</h3>
+            ${members.length === 0 ? 
+              '<p class="text-muted">No hay miembros en este grupo</p>' :
+              `
+              <div class="table-container">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Email</th>
+                      <th>Rol</th>
+                      <th>Se unió</th>
+                      ${canManage ? '<th>Acciones</th>' : ''}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${members.map(member => `
+                      <tr>
+                        <td>${member.nombre}</td>
+                        <td>${member.email}</td>
+                        <td>${member.role}</td>
+                        <td>${formatDate(member.joinedAt)}</td>
+                        ${canManage ? `
+                          <td>
+                            <button class="btn btn-danger btn-sm" 
+                                    onclick="GroupsView.removeMember(${group.id}, ${member.id})">
+                              Eliminar
+                            </button>
+                          </td>
+                        ` : ''}
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+              `
+            }
+          </div>
+
+          ${canManage && invitations.length > 0 ? `
+            <div class="group-panel__section">
+              <h3>Invitaciones Pendientes</h3>
+              <div class="table-container">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Usuario</th>
+                      <th>Email</th>
+                      <th>Estado</th>
+                      <th>Enviada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${invitations.map(inv => `
+                      <tr>
+                        <td>${inv.invitedUserName || '-'}</td>
+                        <td>${inv.email || '-'}</td>
+                        <td>
+                          <span class="badge badge--${getStatusColor(inv.estado || 'pendiente')}">
+                            ${getStatusName(inv.estado || 'pendiente')}
+                          </span>
+                        </td>
+                        <td>${formatDate(inv.createdAt)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        </section>
+
+        <section class="group-messages-panel">
+          <div class="group-messages-panel__header">
+            <h3>Buzón de mensajes</h3>
+            <p class="text-muted">Comparte notas rápidas con tu tutor o compañeros.</p>
+          </div>
+          <div class="group-messages-panel__body" id="group-messages-content" data-group-id="${group.id}">
+            <div id="group-messages-empty" class="group-messages-empty">
+              <p>Todavía no hay mensajes. ¡Se el primero en escribir!</p>
+            </div>
+            <div id="group-messages-list" class="group-messages-list"></div>
+          </div>
+          <form id="group-message-form" class="group-messages-form">
+            <textarea 
+              id="group-message-input" 
+              class="form-input" 
+              rows="3" 
+              placeholder="Escribe un mensaje para el grupo..."
+              required
+            ></textarea>
+            <button type="submit" class="btn btn-primary btn-block">Enviar mensaje</button>
+          </form>
+        </section>
       </div>
     `;
   }
@@ -440,6 +472,7 @@ class GroupsView {
   setupGroupDetailsListeners(groupId, group, user) {
     const inviteBtn = document.getElementById('invite-member-btn');
     const editBtn = document.getElementById('edit-group-btn');
+    this.initializeMessageBoard(groupId);
 
     if (inviteBtn) {
       inviteBtn.addEventListener('click', () => this.showInviteModal(groupId));
@@ -448,6 +481,101 @@ class GroupsView {
     if (editBtn) {
       editBtn.addEventListener('click', () => this.showEditModal(groupId, group));
     }
+  }
+
+  initializeMessageBoard(groupId) {
+    const form = document.getElementById('group-message-form');
+    const textarea = document.getElementById('group-message-input');
+
+    if (!form || !textarea) {
+      return;
+    }
+
+    const renderMessages = () => {
+      const messages = this.getStoredMessages(groupId);
+      const list = document.getElementById('group-messages-list');
+      const emptyState = document.getElementById('group-messages-empty');
+
+      if (!list || !emptyState) return;
+
+      if (messages.length === 0) {
+        list.innerHTML = '';
+        emptyState.style.display = 'flex';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      list.innerHTML = messages.map(message => `
+        <div class="group-message">
+          <div class="group-message__header">
+            <strong>${message.author}</strong>
+            <span>${message.role}</span>
+            <span>${formatDate(message.createdAt)}</span>
+          </div>
+          <p>${message.content}</p>
+        </div>
+      `).join('');
+    };
+
+    renderMessages();
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const content = textarea.value.trim();
+      if (!content) {
+        return;
+      }
+
+      const currentUser = authService.getCurrentUser();
+      const newMessage = {
+        id: Date.now(),
+        author: currentUser?.nombre || 'Usuario',
+        role: currentUser?.role || 'Invitado',
+        content,
+        createdAt: new Date().toISOString()
+      };
+
+      this.saveMessage(groupId, newMessage);
+      textarea.value = '';
+      renderMessages();
+    });
+  }
+
+  getStoredMessages(groupId) {
+    try {
+      const raw = localStorage.getItem(`groupMessages_${groupId}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch (error) {
+      console.error('No se pudo leer el buzón local:', error);
+      return [];
+    }
+  }
+
+  saveMessage(groupId, message) {
+    try {
+      const messages = this.getStoredMessages(groupId);
+      messages.push(message);
+      localStorage.setItem(`groupMessages_${groupId}`, JSON.stringify(messages));
+    } catch (error) {
+      console.error('No se pudo guardar el mensaje:', error);
+    }
+  }
+
+  getGroupResponsibleName(group) {
+    const nameCandidates = [
+      group?.profesorNombre,
+      group?.profesor,
+      group?.tutor,
+      group?.tutorNombre,
+      group?.creador,
+      group?.creadoPor,
+      group?.createdBy,
+      group?.createdByName,
+      group?.ownerName
+    ];
+
+    const name = nameCandidates.find(value => typeof value === 'string' && value.trim().length > 0);
+    return name ? name : 'Creado por quien registró el grupo';
   }
 
   async showInviteModal(groupId) {

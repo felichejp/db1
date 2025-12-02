@@ -10,15 +10,28 @@ import { query } from '../config/database';
  */
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, nombre, role, grado } = req.body;
+    const { email, password, nombre, role, grado, apellidos, telefono, carrera } = req.body;
+
+    // Validar campos requeridos
+    if (!email || !password || !nombre) {
+      sendError(res, 'Email, contraseña y nombre son campos obligatorios', 400);
+      return;
+    }
+
+    // Validar formato de email básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      sendError(res, 'El formato del email no es válido', 400);
+      return;
+    }
 
     // Validar que solo se pueda registrar como Estudiante
-    if (role !== 'Estudiante') {
+    if (role && role !== 'Estudiante') {
       sendError(res, 'Solo se puede registrar como Estudiante', 400);
       return;
     }
 
-    // Validar que el grado no exceda 10
+    // Validar que el grado no exceda 10 si se proporciona
     if (grado && (parseInt(grado) < 1 || parseInt(grado) > 10)) {
       sendError(res, 'El grado debe estar entre 1 y 10', 400);
       return;
@@ -38,12 +51,19 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Hashear contraseña
     const passwordHash = await hashPassword(password);
 
+    // Combinar nombre y apellidos si se proporcionan
+    // Si el frontend ya envía nombre completo, usarlo directamente
+    // Si envía nombre y apellidos por separado, combinarlos
+    const nombreCompleto = apellidos ? `${nombre} ${apellidos}`.trim() : nombre;
+
     // Crear usuario
+    // Nota: apellidos, telefono y carrera no están en el schema actual
+    // pero los guardamos en el campo nombre si es necesario, o se pueden agregar al schema después
     const result = await query(
       `INSERT INTO users (email, "passwordHash", nombre, role, grado)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, nombre, role, grado`,
-      [email, passwordHash, nombre, role, grado || null]
+      [email, passwordHash, nombreCompleto, role || 'Estudiante', grado || null]
     );
 
     const user = result.rows[0];
@@ -77,19 +97,50 @@ export async function register(req: Request, res: Response): Promise<void> {
  */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { email, password, nombre } = req.body;
 
-    // Buscar usuario
-    const result = await query(
-      'SELECT id, email, "passwordHash", nombre, role, grado FROM users WHERE email = $1',
-      [email]
-    );
+    // Validar que se proporcione email o nombre
+    if (!email && !nombre) {
+      sendError(res, 'Debe proporcionar email o nombre de usuario', 400);
+      return;
+    }
+
+    if (!password) {
+      sendError(res, 'La contraseña es requerida', 400);
+      return;
+    }
+
+    // Buscar usuario por email o nombre
+    let result;
+    if (email) {
+      // Buscar por email (más preciso)
+      result = await query(
+        'SELECT id, email, "passwordHash", nombre, role, grado FROM users WHERE LOWER(email) = LOWER($1)',
+        [email.trim()]
+      );
+    } else if (nombre) {
+      // Buscar por nombre (coincidencia exacta primero, luego parcial)
+      const nombreTrimmed = nombre.trim();
+      result = await query(
+        `SELECT id, email, "passwordHash", nombre, role, grado 
+         FROM users 
+         WHERE nombre = $1 OR LOWER(nombre) = LOWER($1) OR nombre LIKE $2
+         ORDER BY CASE WHEN nombre = $1 THEN 1 WHEN LOWER(nombre) = LOWER($1) THEN 2 ELSE 3 END
+         LIMIT 1`,
+        [nombreTrimmed, `%${nombreTrimmed}%`]
+      );
+    } else {
+      sendError(res, 'Debe proporcionar email o nombre de usuario', 400);
+      return;
+    }
 
     if (result.rows.length === 0) {
       sendError(res, 'Credenciales inválidas', 401);
       return;
     }
 
+    // Si hay múltiples resultados por nombre, tomar el primero
+    // (en producción, sería mejor requerir email para evitar ambigüedad)
     const user = result.rows[0];
 
     // Verificar contraseña

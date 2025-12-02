@@ -25,9 +25,13 @@ export const validateRegister = [
     .withMessage('La contraseña debe tener al menos 8 caracteres'),
   body('nombre').notEmpty().withMessage('El nombre es requerido'),
   body('role')
+    .optional()
     .equals('Estudiante')
     .withMessage('Solo se puede registrar como Estudiante'),
   body('grado').optional().isInt({ min: 1, max: 10 }).withMessage('Grado inválido (debe ser entre 1 y 10)'),
+  body('apellidos').optional().isString().withMessage('Apellidos debe ser texto'),
+  body('telefono').optional().isString().withMessage('Teléfono debe ser texto'),
+  body('carrera').optional().isString().withMessage('Carrera debe ser texto'),
   validate
 ];
 
@@ -35,7 +39,21 @@ export const validateRegister = [
  * Validaciones para login
  */
 export const validateLogin = [
-  body('email').isEmail().withMessage('Email inválido'),
+  // Validación personalizada: email o nombre, pero al menos uno
+  body().custom((value) => {
+    if (!value.email && !value.nombre) {
+      throw new Error('Debe proporcionar email o nombre de usuario');
+    }
+    // Si se proporciona email, debe ser válido
+    if (value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email)) {
+      throw new Error('Email inválido');
+    }
+    // Si se proporciona nombre, no debe estar vacío
+    if (value.nombre && !value.email && value.nombre.trim().length === 0) {
+      throw new Error('El nombre no puede estar vacío');
+    }
+    return true;
+  }),
   body('password').notEmpty().withMessage('La contraseña es requerida'),
   validate
 ];

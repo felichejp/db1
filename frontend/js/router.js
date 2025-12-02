@@ -3,6 +3,12 @@ import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
 import GroupsView from './views/GroupsView.js';
+import GroupDetailView from './views/GroupDetailView.js';
+import SessionsView from './views/SessionsView.js';
+import ProfileView from './views/ProfileView.js';
+import AdvisorRequestView from './views/AdvisorRequestView.js';
+import AdminGroupCreationView from './views/AdminGroupCreationView.js';
+import AdminAdvisorRequestsView from './views/AdminAdvisorRequestsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -23,7 +29,11 @@ class Router {
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
     this.routes.set('#/groups', { view: GroupsView, protected: true });
-    // TODO: Agregar más rutas cuando se implementen las vistas
+    this.routes.set('#/sessions', { view: SessionsView, protected: true });
+    this.routes.set('#/profile', { view: ProfileView, protected: true });
+    this.routes.set('#/advisor-request', { view: AdvisorRequestView, protected: true });
+    this.routes.set('#/admin/groups/create', { view: AdminGroupCreationView, protected: true });
+    this.routes.set('#/admin/advisor-requests', { view: AdminAdvisorRequestsView, protected: true });
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -42,7 +52,7 @@ class Router {
       // Verificar si es una ruta de grupos con ID: #/groups/:id
       const groupsMatch = hash.match(/^#\/groups\/(\d+)$/);
       if (groupsMatch) {
-        route = this.routes.get('#/groups');
+        route = { view: GroupDetailView, protected: true };
         params = { groupId: parseInt(groupsMatch[1], 10) };
       }
     }

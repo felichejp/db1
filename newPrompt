@@ -1,0 +1,80 @@
+Eres un programador experto
+Estoy implementando el frontend de la version final del proyecto de asesorias,
+por lo que necesito que implementes las vistas y la logica (de ser posible), puedes
+guiarte de las vistas que ya existen y continuar con el mismo diseño (colores, fuentes, tamaños de paneles, etc), modificar las que ya esten y añadir las nuevas siguiendo las siguientes especificaciones:
+
+Vistas Generales (Para cualquier rol):
+    Vista Registro:
+    Diseñada para aquellos nuevos usuarios de manera que se les solicite:
+    - Nombre
+    - Apellidos
+    - Correo (Institucional, es decir el dominio es @umich.mx), importante, solo
+    puede haber un usuario asociado a un correo.
+    - Contraseña (cumplir con longitus minima de 8 caracteres)
+    - Telefono 
+    - Carrera (Elegir una de las 3 opciones: Ingeniera en Computacion,
+    Ingenieria Electrica, Ingenieria Electronica)
+    Una vez llenados los campos el usuario puede hacer click en registrarse.
+    Debajo del formulario debe aparecer la leyenda "¿Ya tienes cuenta?, Inicia Sesion", si el usuario hace click debe llevarlo a la vista "Login"
+
+    Vista Login:
+    Diseñada para aquellos usuarios que ya tengan una cuenta, esta debe solicitar:
+    - Usuario (Ya sea nombre o correo)
+    - Contraseña 
+    - Rol (Menu desplegable para elegir entre "Alumno", "Asesor", "Profesor" y "Administrador", es util para aquellas personas con mas de un rol)
+    En la parte inferior debe tener un boton para iniciar sesion y en caso de fallar mostrar la leyenda correcta "Campo X es obligatorio", "Usuario y/o contraseña no coinciden", "No estas registrado como X rol"
+    Asi mismo debe tener una leyenda que diga "¿No tienes cuenta?, Registrate" y al hacer click debe llevarlo a la vista "Registro"
+
+Vistas para Alumnos/Estudiantes:
+    -Vista Panel Principal / Pagina de Inicio
+        Debe mostrar un panel lateral (menu) para acceder a las vistas "Mis Grupos", "Proximas Sesiones" y "Mi Perfil"
+        En la parte superior derecha se debe mostrar el usuario, el boton de notificaiones (capaz de desplegarse para mostrar las recientes) y el boton de cerrar sesion
+        En la seccion principal (el centro de la vista) debe mostrar a la izquierda los grupos a los que estoy inscrito (en tarjetas) con una breve descripcion de informacion (Nombre del grupo/materia, nombre de su asesor, horario) y en la parte de la derecha se debe mostrar los grupos disponibles a los que me puedo unir.
+    
+    -Vista Mis Grupos:
+        En la parte de la izquierda debe mostrar informacion importante como el nombre del grupo, del asesor, del profesor, etc en forma de tarjetas de manera que si un usuario hace click sobre alguna la lleve a la vista "Informacion de Grupo" de dicho grupo correspondiente.
+        En la parte de la derecha se debe mostrar el chat en tiempo real de los grupos, de manera que el usuario pueda cambiar entre los distintos chats de los diferentes grupos.
+
+    -Vista Informacion de Grupo:
+        En la parte superior debe mostrarse cada que un usuario hace click sobre alguno de las tarjetas de grupos y debe mostrar informacion detallada tales como horario y un boton para solicitar asesoria, si un alumno lo pulsa debe mostrar un calendario marcando en verde los dias disponibles para solicitar una asesoria, debe elegir uno y escribir el tema sobre el que desea una asesoria. Dicha solicitud se le enviara al asesor del grupo.
+        En la parte inferior debe mostrar un apartado de proximas sesiones indicando los horarios de las siguientes asesorias y sus respectivos temas a tratar
+    
+    - Vista Proximas Sesiones:
+        Debe recopilar los horarios de las proximas sesiones de asesoria de TODOS los cursos/materias a los que este inscrito un alumno y sus respectivos temas a tratar.
+
+    - Vista Mi Perfil:
+        Debe mostrar la informacion personal del estudiante y permitirle actualizar sus datos
+
+    -Vista Solicitud de Asesor:
+        Debe ser una opcion en el panel lateral de la vista de Inicio, al hacer clikc debe mostrar una pagina con la leyenda "¿Te sientes con las habilidades necesarias para asesorar a otros de tus compañeros con dificultades en sus materias? Pues entonces, prueba convertirte en asesor."
+        Debajo de dicha leyenda debe mostrarse una check-list que el alumno podra completar con las opciones de "Lo Cumplo" o "No lo Cumplo" para los apartados:
+        - Disponibilidad de horario
+        - Interes en ayudar a mis compañeros
+        - Capacidad de resolver inquietudes a mis compañeros
+        Y cualquier otro criterio pertinente.
+        Debajo de esa check-list debe haber un campo de texto donde el alumno podria ingresar un pequeño parrafo especificando porque desea convertirse en asesor
+        Debajo de eso se debe mostrar un boton de "Solicitar convertirme en Asesor", al hacer click se debe enviar la solcitud al administrador y debe aparecer la leyenda "Tu solicitud ha sido enviada al administrador y la esta analizando para ser aprobada"
+        Todo este proceso solo se puede realizar una vez por alumno mientras el administrador analiza la solicitud, de manera que no podra volver a hacer otra solicitud hasta que el administrador le haya rechazado la primera.
+
+Vistas para Asesor:
+    -Vista Principal / Inicio:
+        A la izquierda debe mostrar los cursos de los que es asesor (con un maximo de 3) con tarjetas.
+        A la derecha debe mostrar las solicitudes de asesoria hechas por sus alumnos, de manera que se visualice de que materia es, en que horario y sobre que tema, a la derecha de cada solicitud un par de botones de aceptar/rechazar solicitud. En caso de aceptar se debe notificar a todos los miembros del curso (incluyendo a alumnos y profesor).
+
+    El resto de vistas serian iguales a las de Estudiante, exceptuando aquellas que tengan que ver con convertirse en Asesor (puesto a que ya lo es)
+
+Vistas para Profesor: 
+    -Vista Principal / Incio:
+        Debe mostrar un historial de las solicitudes que sus Asesores han aceptado/rechazado y en caso de que hayan sido rechazadas el profesor debe disponer de un boton para "Contactar a Asesor" de manera que pueda preguntarle el porque rechazo la asesoria.
+
+    El resto de vistas seran iguales, en tanto puedan serlo
+
+Vistas para Administrador:
+    -Vista Principal / Inicio:
+        Debe mostrar graficas de informacion importante
+    
+    -Vista para creacion de grupos:
+        A traves de ella puede crear grupos y asigarles profesor y asesor
+    
+    -Vista Solicitudes de Asesor:
+        Aqui tendria todas las solicitudes de alumnos que deseen ser asesores y al hacer click en cada una las podra examinar mas detalladamente y decidir si acepatarla o rechazarla.

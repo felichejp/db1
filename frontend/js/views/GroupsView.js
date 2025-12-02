@@ -1,8 +1,11 @@
 import authService from '../services/authService.js';
 import { groupsAPI } from '../api/groups.js';
+import { sessionsAPI } from '../api/sessions.js';
+import { tutorsAPI } from '../api/tutors.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
-import { formatDate, getStatusName, getStatusColor } from '../utils/helpers.js';
+import ScheduleCalendar from '../components/ScheduleCalendar.js';
+import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
 import { validateForm } from '../utils/validators.js';
 
 /**
@@ -54,27 +57,43 @@ class GroupsView {
 
   async loadGroups() {
     const content = document.getElementById('groups-content');
+    const user = authService.getCurrentUser();
     
     try {
-      const response = await groupsAPI.getAll();
-      const groups = response.success ? response.data : [];
-      
-      if (groups.length === 0) {
-        content.innerHTML = `
-          <div class="text-center" style="padding: 2rem;">
-            <p class="text-muted">No tienes grupos asignados</p>
-            ${(authService.getCurrentUser()?.role === 'Profesor' || authService.getCurrentUser()?.role === 'Admin') ? `
-              <button class="btn btn-primary mt-2" id="create-first-group-btn">
-                Crear tu primer grupo
-              </button>
-            ` : ''}
-          </div>
-        `;
-        this.setupEventListeners();
-        return;
-      }
+      if (user?.role === 'Estudiante') {
+        // Para estudiantes: cargar grupos inscritos y disponibles
+        const [enrolledRes, availableRes] = await Promise.all([
+          groupsAPI.getAll(),
+          groupsAPI.getAvailable()
+        ]);
+        
+        const enrolledGroups = enrolledRes.success ? enrolledRes.data : [];
+        const availableGroups = availableRes.success ? availableRes.data : [];
+        
+        content.innerHTML = this.renderStudentGroupsLayout(enrolledGroups, availableGroups);
+      } else {
+        // Para otros roles: comportamiento original
+        const response = await groupsAPI.getAll();
+        const groups = response.success ? response.data : [];
+        
+        if (groups.length === 0) {
+          content.innerHTML = `
+            <div class="text-center" style="padding: 2rem;">
+              <p class="text-muted">No tienes grupos asignados</p>
+              ${(user?.role === 'Profesor' || user?.role === 'Admin') ? `
+                <button class="btn btn-primary mt-2" id="create-first-group-btn">
+                  Crear tu primer grupo
+                </button>
+              ` : ''}
+            </div>
+          `;
+          this.setupEventListeners();
+          return;
+        }
 
-      content.innerHTML = this.renderGroupsList(groups);
+        content.innerHTML = this.renderGroupsList(groups);
+      }
+      
       this.setupEventListeners();
     } catch (error) {
       console.error('Error en loadGroups:', error);
@@ -91,6 +110,79 @@ class GroupsView {
         `;
       }
     }
+  }
+
+  renderStudentGroupsLayout(enrolledGroups, availableGroups) {
+    return `
+      <div class="groups-two-column-layout">
+        <section class="groups-enrolled-section">
+          <h2>Mis Grupos Inscritos</h2>
+          ${enrolledGroups.length > 0 ? 
+            `<div class="group-card-grid">${this.renderGroupCards(enrolledGroups)}</div>` :
+            '<p class="text-muted">No estás inscrito en ningún grupo</p>'
+          }
+        </section>
+        <section class="groups-available-section">
+          <h2>Grupos Disponibles</h2>
+          ${availableGroups.length > 0 ? 
+            `<div class="group-card-grid">${this.renderGroupCards(availableGroups, true)}</div>` :
+            '<p class="text-muted">No hay grupos disponibles</p>'
+          }
+        </section>
+      </div>
+    `;
+  }
+
+  renderGroupCards(groups, isAvailable = false) {
+    return groups.map(group => {
+      if (isAvailable) {
+        // Tarjeta simplificada para grupos disponibles
+        return `
+          <article class="group-card group-card--available">
+            <h3 class="group-card__title--simple">${group.nombre || 'Sin nombre'}</h3>
+            <div class="group-card__actions">
+              <a href="#/groups/${group.id}" class="btn btn-primary btn-sm btn-block">
+                Ver detalles
+              </a>
+            </div>
+          </article>
+        `;
+      }
+      
+      // Tarjeta completa para grupos inscritos
+      const responsibleName = this.getGroupResponsibleName(group);
+      return `
+        <article class="group-card">
+          <div class="group-card__header">
+            <div>
+              <p class="group-card__label">Grupo</p>
+              <h3 class="group-card__title">${group.nombre || 'Sin nombre'}</h3>
+            </div>
+            <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
+              ${getStatusName(group.estado || 'activo')}
+            </span>
+          </div>
+          <p class="group-card__description">
+            ${group.descripcion || 'Este grupo aún no tiene descripción.'}
+          </p>
+          <div class="group-card__meta">
+            <div>
+              <p class="group-card__meta-label">Creado</p>
+              <p class="group-card__meta-value">${formatDate(group.createdAt)}</p>
+            </div>
+            <div>
+              <p class="group-card__meta-label">Tutor / Profesor</p>
+              <p class="group-card__meta-value">${responsibleName}</p>
+            </div>
+          </div>
+          <div class="group-card__actions">
+            <a href="#/groups/${group.id}" class="btn btn-primary btn-sm btn-block">
+              Ver detalles
+            </a>
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 
   renderGroupsList(groups) {
@@ -302,10 +394,11 @@ class GroupsView {
     const user = authService.getCurrentUser();
 
     try {
-      const [groupRes, membersRes, invitationsRes] = await Promise.all([
+      const [groupRes, membersRes, invitationsRes, sessionsRes] = await Promise.all([
         groupsAPI.getById(groupId),
         groupsAPI.getMembers(groupId),
-        groupsAPI.getInvitations(groupId)
+        groupsAPI.getInvitations(groupId),
+        sessionsAPI.getAll()
       ]);
 
       if (!groupRes.success) {
@@ -316,6 +409,22 @@ class GroupsView {
       const group = groupRes.data;
       const members = membersRes.success ? membersRes.data : [];
       const invitations = invitationsRes.success ? invitationsRes.data : [];
+      const allSessions = sessionsRes.success ? sessionsRes.data : [];
+      
+      // Filtrar sesiones de este grupo y futuras
+      const groupSessions = allSessions
+        .filter(s => s.groupId === parseInt(groupId))
+        .filter(s => {
+          const sessionDate = new Date(s.fecha);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return sessionDate >= today;
+        })
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+        .slice(0, 5); // Próximas 5 sesiones
+
+      // Verificar si el usuario está inscrito
+      const isEnrolled = user && members.some(m => m.id === user.userId || m.id === user.id);
 
       titleEl.textContent = group.nombre || 'Grupo sin nombre';
 
@@ -331,8 +440,15 @@ class GroupsView {
         `;
       }
 
-      content.innerHTML = this.renderGroupDetailsContent(group, members, invitations);
+      content.innerHTML = this.renderGroupDetailsContent(group, members, invitations, groupSessions, isEnrolled);
       this.setupGroupDetailsListeners(groupId, group, user);
+      
+      // Renderizar calendario
+      setTimeout(() => {
+        if (document.getElementById('group-schedule-calendar')) {
+          ScheduleCalendar.render('group-schedule-calendar', groupSessions);
+        }
+      }, 100);
     } catch (error) {
       console.error('Error en loadGroupDetails:', error);
       if (error.response?.status === 401) {
@@ -345,7 +461,7 @@ class GroupsView {
     }
   }
 
-  renderGroupDetailsContent(group, members, invitations) {
+  renderGroupDetailsContent(group, members, invitations, sessions = [], isEnrolled = false) {
     const canManage = authService.getCurrentUser()?.role === 'Profesor' || 
                       authService.getCurrentUser()?.role === 'Admin';
 
@@ -355,11 +471,12 @@ class GroupsView {
           <div class="group-panel__intro">
             <p class="group-panel__label">Grupo</p>
             <h2 class="group-panel__title">${group.nombre || 'Sin nombre'}</h2>
-            <p class="group-panel__subtitle">Contenido próximamente...</p>
           </div>
           <div class="group-panel__section">
             <h3>Información general</h3>
             <p><strong>Descripción:</strong> ${group.descripcion || 'Sin descripción'}</p>
+            <p><strong>Aula:</strong> ${group.aula || 'Por asignar'}</p>
+            <p><strong>Horario:</strong> Lunes - Sábado, 9:00 AM - 3:00 PM</p>
             <p>
               <strong>Estado:</strong> 
               <span class="badge badge--${getStatusColor(group.estado || 'activo')}">
@@ -369,6 +486,54 @@ class GroupsView {
             <p><strong>Responsable:</strong> ${this.getGroupResponsibleName(group)}</p>
             <p><strong>Creado:</strong> ${formatDate(group.createdAt)}</p>
           </div>
+
+          <div class="group-panel__section">
+            <h3>Calendario de Horarios</h3>
+            <div id="group-schedule-calendar"></div>
+          </div>
+
+          <div class="group-panel__section">
+            <h3>Sesiones Próximas</h3>
+            ${sessions.length > 0 ? `
+              <div class="table-container">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Tema</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${sessions.map(session => `
+                      <tr>
+                        <td>${formatDate(session.fecha)}</td>
+                        <td>${formatTime(session.horaInicio)} - ${formatTime(session.horaFin)}</td>
+                        <td>${session.tema || '-'}</td>
+                        <td>
+                          <span class="badge badge--${getStatusColor(session.estado)}">
+                            ${getStatusName(session.estado)}
+                          </span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            ` : '<p class="text-muted">No hay sesiones programadas</p>'}
+          </div>
+
+          ${canManage ? `
+          <div class="group-panel__section">
+            <h3>Asignar Tutor</h3>
+            <div id="assign-tutor-section">
+              <button class="btn btn-primary btn-sm" id="assign-tutor-btn">
+                + Asignar Tutor
+              </button>
+            </div>
+          </div>
+          ` : ''}
 
           <div class="group-panel__section">
             <h3>Miembros (${members.length}/5)</h3>
@@ -443,28 +608,30 @@ class GroupsView {
           ` : ''}
         </section>
 
-        <section class="group-messages-panel">
-          <div class="group-messages-panel__header">
-            <h3>Buzón de mensajes</h3>
-            <p class="text-muted">Comparte notas rápidas con tu tutor o compañeros.</p>
-          </div>
-          <div class="group-messages-panel__body" id="group-messages-content" data-group-id="${group.id}">
-            <div id="group-messages-empty" class="group-messages-empty">
-              <p>Todavía no hay mensajes. ¡Se el primero en escribir!</p>
+        ${isEnrolled ? `
+          <section class="group-messages-panel">
+            <div class="group-messages-panel__header">
+              <h3>Buzón de mensajes</h3>
+              <p class="text-muted">Comparte notas rápidas con tu tutor o compañeros.</p>
             </div>
-            <div id="group-messages-list" class="group-messages-list"></div>
-          </div>
-          <form id="group-message-form" class="group-messages-form">
-            <textarea 
-              id="group-message-input" 
-              class="form-input" 
-              rows="3" 
-              placeholder="Escribe un mensaje para el grupo..."
-              required
-            ></textarea>
-            <button type="submit" class="btn btn-primary btn-block">Enviar mensaje</button>
-          </form>
-        </section>
+            <div class="group-messages-panel__body" id="group-messages-content" data-group-id="${group.id}">
+              <div id="group-messages-empty" class="group-messages-empty">
+                <p>Todavía no hay mensajes. ¡Se el primero en escribir!</p>
+              </div>
+              <div id="group-messages-list" class="group-messages-list"></div>
+            </div>
+            <form id="group-message-form" class="group-messages-form">
+              <textarea 
+                id="group-message-input" 
+                class="form-input" 
+                rows="3" 
+                placeholder="Escribe un mensaje para el grupo..."
+                required
+              ></textarea>
+              <button type="submit" class="btn btn-primary btn-block">Enviar mensaje</button>
+            </form>
+          </section>
+        ` : ''}
       </div>
     `;
   }
@@ -472,7 +639,13 @@ class GroupsView {
   setupGroupDetailsListeners(groupId, group, user) {
     const inviteBtn = document.getElementById('invite-member-btn');
     const editBtn = document.getElementById('edit-group-btn');
-    this.initializeMessageBoard(groupId);
+    const assignTutorBtn = document.getElementById('assign-tutor-btn');
+    
+    // Solo inicializar chat si el usuario está inscrito
+    const isEnrolled = user && document.getElementById('group-messages-content');
+    if (isEnrolled) {
+      this.initializeMessageBoard(groupId);
+    }
 
     if (inviteBtn) {
       inviteBtn.addEventListener('click', () => this.showInviteModal(groupId));
@@ -480,6 +653,10 @@ class GroupsView {
 
     if (editBtn) {
       editBtn.addEventListener('click', () => this.showEditModal(groupId, group));
+    }
+
+    if (assignTutorBtn) {
+      assignTutorBtn.addEventListener('click', () => this.showAssignTutorModal(groupId));
     }
   }
 
@@ -683,6 +860,170 @@ class GroupsView {
       console.error('Error enviando invitación:', error);
       Notification.error(error.response?.data?.message || 'Error al enviar la invitación');
     } finally {
+      Loading.hide();
+    }
+  }
+
+  async showAssignTutorModal(groupId) {
+    // Verificar si ya existe un modal abierto
+    const existingModal = document.querySelector('.modal-overlay');
+    if (existingModal) {
+      console.log('Ya existe un modal abierto, no se abrirá otro');
+      return;
+    }
+
+    try {
+      Loading.show();
+      
+      // Obtener lista de tutores
+      const tutorsRes = await tutorsAPI.getAll();
+      const tutors = tutorsRes.success ? tutorsRes.data : [];
+
+      // Obtener miembros actuales del grupo
+      const membersRes = await groupsAPI.getMembers(groupId);
+      const members = membersRes.success ? membersRes.data : [];
+      const memberIds = members.map(m => m.id);
+
+      // Filtrar tutores que ya son miembros y obtener cuántos grupos tiene cada tutor
+      const availableTutors = [];
+      for (const tutor of tutors) {
+        if (memberIds.includes(tutor.userId)) {
+          continue; // Ya es miembro del grupo
+        }
+
+        // Obtener cuántos grupos tiene este tutor
+        let tutorGroupsCount = 0;
+        try {
+          const tutorGroupsCountRes = await axios.get(
+            `${window.API_BASE_URL}/api/groups/tutor/${tutor.userId}/count`,
+            { headers: { Authorization: `Bearer ${authService.getToken()}` } }
+          );
+          if (tutorGroupsCountRes.data.success) {
+            tutorGroupsCount = tutorGroupsCountRes.data.data.count || 0;
+          }
+        } catch (e) {
+          // Si el endpoint no existe, usar método alternativo
+          const allGroupsRes = await groupsAPI.getAll();
+          if (allGroupsRes.success) {
+            const allGroups = allGroupsRes.data || [];
+            for (const group of allGroups) {
+              try {
+                const groupMembersRes = await groupsAPI.getMembers(group.id);
+                if (groupMembersRes.success) {
+                  const isMember = groupMembersRes.data.some(m => m.id === tutor.userId);
+                  if (isMember) tutorGroupsCount++;
+                }
+              } catch (err) {
+                // Ignorar errores
+              }
+            }
+          }
+        }
+
+        availableTutors.push({
+          ...tutor,
+          groupsCount: tutorGroupsCount,
+          canAssign: tutorGroupsCount < 3
+        });
+      }
+
+      if (availableTutors.length === 0) {
+        Notification.warning('No hay tutores disponibles para asignar');
+        Loading.hide();
+        return;
+      }
+
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal">
+          <div class="modal__header">
+            <h2>Asignar Tutor al Grupo</h2>
+            <button class="modal__close" id="close-assign-tutor-modal-btn">&times;</button>
+          </div>
+          <div class="modal__body">
+            <form id="assign-tutor-form">
+              <div class="form-group">
+                <label class="form-label" for="tutor-select">Seleccionar Tutor *</label>
+                <select id="tutor-select" class="form-input" required>
+                  <option value="">-- Selecciona un tutor --</option>
+                  ${availableTutors.map(tutor => `
+                    <option value="${tutor.userId}" ${!tutor.canAssign ? 'disabled' : ''}>
+                      ${tutor.nombre} ${!tutor.canAssign ? `(Ya tiene 3 grupos - Máximo alcanzado)` : `(${tutor.groupsCount}/3 grupos)`}
+                    </option>
+                  `).join('')}
+                </select>
+                ${availableTutors.filter(t => !t.canAssign).length > 0 ? `
+                  <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Nota: Los tutores con 3 grupos no pueden ser asignados (máximo permitido).
+                  </p>
+                ` : ''}
+              </div>
+              <div class="modal__footer">
+                <button type="button" class="btn btn-secondary" id="cancel-assign-tutor-btn">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Asignar Tutor</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Cerrar modal
+      const closeBtn = document.getElementById('close-assign-tutor-modal-btn');
+      const cancelBtn = document.getElementById('cancel-assign-tutor-btn');
+      const closeModal = () => {
+        document.body.removeChild(modal);
+      };
+
+      closeBtn.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      // Enviar formulario
+      const form = document.getElementById('assign-tutor-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tutorId = document.getElementById('tutor-select').value;
+        
+        if (!tutorId) {
+          Notification.error('Por favor selecciona un tutor');
+          return;
+        }
+
+        const selectedTutor = availableTutors.find(t => t.userId === parseInt(tutorId));
+        if (!selectedTutor || !selectedTutor.canAssign) {
+          Notification.error('Este tutor no puede ser asignado (ya tiene 3 grupos)');
+          return;
+        }
+
+        try {
+          Loading.show();
+          const res = await groupsAPI.addMember(groupId, { userId: parseInt(tutorId) });
+          
+          if (res.success) {
+            Notification.success('Tutor asignado exitosamente');
+            closeModal();
+            // Recargar detalles del grupo
+            await this.loadGroupDetails(groupId);
+          } else {
+            Notification.error(res.message || 'Error al asignar tutor');
+          }
+        } catch (error) {
+          console.error('Error asignando tutor:', error);
+          Notification.error(error.response?.data?.message || 'Error al asignar tutor');
+        } finally {
+          Loading.hide();
+        }
+      });
+
+      Loading.hide();
+    } catch (error) {
+      console.error('Error cargando tutores:', error);
+      Notification.error('Error al cargar la lista de tutores');
       Loading.hide();
     }
   }

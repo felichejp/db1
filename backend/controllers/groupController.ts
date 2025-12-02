@@ -48,6 +48,40 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Obtener grupos disponibles (no inscritos) para estudiantes
+ */
+export async function getAvailableGroups(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    if (req.user.role !== 'Estudiante') {
+      sendError(res, 'Solo estudiantes pueden ver grupos disponibles', 403);
+      return;
+    }
+
+    const result = await query(
+      `SELECT g.*, u.nombre as "profesorNombre", u.email as "profesorEmail"
+       FROM groups g
+       LEFT JOIN users u ON g."profesorId" = u.id
+       WHERE g.estado = 'activo'
+       AND g.id NOT IN (
+         SELECT "groupId" FROM group_members WHERE "userId" = $1
+       )
+       ORDER BY g."createdAt" DESC`,
+      [req.user.userId]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en getAvailableGroups:', error);
+    sendError(res, 'Error al obtener grupos disponibles', 500);
+  }
+}
+
+/**
  * Crear grupo (Profesor, Admin)
  */
 export async function createGroup(req: Request, res: Response): Promise<void> {
@@ -204,6 +238,25 @@ export async function deleteGroup(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Obtener cantidad de grupos de un tutor
+ */
+export async function getTutorGroupsCount(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId } = req.params;
+
+    const result = await query(
+      'SELECT COUNT(*) as count FROM group_members WHERE "userId" = $1',
+      [userId]
+    );
+
+    sendSuccess(res, { count: parseInt(result.rows[0].count, 10) });
+  } catch (error) {
+    console.error('Error en getTutorGroupsCount:', error);
+    sendError(res, 'Error al obtener cantidad de grupos', 500);
+  }
+}
+
+/**
  * Listar miembros del grupo
  */
 export async function getGroupMembers(req: Request, res: Response): Promise<void> {
@@ -234,14 +287,49 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
     const { id } = req.params;
     const { userId } = req.body;
 
-    // Verificar que el grupo no tenga más de 5 miembros
-    const countResult = await query(
-      'SELECT COUNT(*) as count FROM group_members WHERE "groupId" = $1',
-      [id]
-    );
-    if (parseInt(countResult.rows[0].count, 10) >= 5) {
-      sendError(res, 'El grupo ya tiene el máximo de miembros (5)', 400);
+    if (!userId) {
+      sendError(res, 'userId es requerido', 400);
       return;
+    }
+
+    const groupId = parseInt(id, 10);
+    const userIdInt = parseInt(userId, 10);
+
+    if (isNaN(groupId) || isNaN(userIdInt)) {
+      sendError(res, 'ID inválido', 400);
+      return;
+    }
+
+    // Verificar que el usuario existe y obtener su rol
+    const userResult = await query('SELECT role FROM users WHERE id = $1', [userIdInt]);
+    if (userResult.rows.length === 0) {
+      sendError(res, 'Usuario no encontrado', 404);
+      return;
+    }
+
+    const userRole = userResult.rows[0].role;
+
+    // Si es tutor, verificar que no tenga más de 3 grupos
+    if (userRole === 'Tutor') {
+      const tutorGroupsResult = await query(
+        'SELECT COUNT(*) as count FROM group_members WHERE "userId" = $1',
+        [userIdInt]
+      );
+      const tutorGroupsCount = parseInt(tutorGroupsResult.rows[0].count, 10);
+      if (tutorGroupsCount >= 3) {
+        sendError(res, 'El tutor ya tiene el máximo de grupos asignados (3)', 400);
+        return;
+      }
+    } else {
+      // Para otros roles, verificar que el grupo no tenga más de 5 miembros
+      const countResult = await query(
+        'SELECT COUNT(*) as count FROM group_members WHERE "groupId" = $1',
+        [groupId]
+      );
+      if (parseInt(countResult.rows[0].count, 10) >= 5) {
+        sendError(res, 'El grupo ya tiene el máximo de miembros (5)', 400);
+        return;
+      }
     }
 
     const result = await query(
@@ -249,7 +337,7 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
        VALUES ($1, $2)
        ON CONFLICT ("groupId", "userId") DO NOTHING
        RETURNING *`,
-      [id, userId]
+      [groupId, userIdInt]
     );
 
     if (result.rows.length === 0) {
@@ -257,11 +345,11 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
       return;
     }
 
-    emitToUser(userId, 'group_invitation', { groupId: id, accepted: true });
+    emitToUser(userIdInt, 'group_invitation', { groupId: groupId, accepted: true });
     sendSuccess(res, result.rows[0], 'Miembro agregado exitosamente', 201);
   } catch (error) {
     console.error('Error en addGroupMember:', error);
-    sendError(res, 'Error al agregar miembro', 500);
+    sendError(res, error instanceof Error ? error.message : 'Error al agregar miembro', 500);
   }
 }
 

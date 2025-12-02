@@ -24,19 +24,17 @@ class Sidebar {
       ],
       Profesor: [
         ...baseItems,
-        { path: '#/groups', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
+        { path: '#/profesor', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
         { path: '#/sessions', label: 'Sesiones', icon: '📅' },
         { path: '#/tutors', label: 'Tutores', icon: '🎓' }
       ],
       Tutor: [
         ...baseItems,
-        { path: '#/sessions', label: 'Mis Sesiones', icon: '📅' },
-        { path: '#/groups', label: 'Grupos', icon: '👨‍👩‍👧‍👦' },
-        { path: '#/profile', label: 'Mi Perfil', icon: '👤' }
+        { path: '#/groups', label: 'Grupos', icon: '👨‍👩‍👧‍👦' }
       ],
       Estudiante: [
         ...baseItems,
-        { path: '#/groups', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
+        { path: '#/groups', label: 'Grupos', icon: '👨‍👩‍👧‍👦' },
         { path: '#/sessions', label: 'Sesiones', icon: '📅' },
         { path: '#/profile', label: 'Mi Perfil', icon: '👤' }
       ]

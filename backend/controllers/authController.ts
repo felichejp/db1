@@ -36,6 +36,21 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const user = result.rows[0];
 
+    // Si el usuario es Tutor, crear registro en tabla tutors
+    if (user.role === 'Tutor') {
+      try {
+        await query(
+          `INSERT INTO tutors ("userId")
+           VALUES ($1)
+           ON CONFLICT ("userId") DO NOTHING`,
+          [user.id]
+        );
+      } catch (error) {
+        console.error('Error creando registro de tutor:', error);
+        // No fallar el registro si hay error al crear tutor
+      }
+    }
+
     // Generar token
     const token = generateToken(user.id, user.role, user.email);
 

@@ -18,6 +18,13 @@ export const groupsAPI = {
     return response.data;
   },
 
+  async getAvailable() {
+    const response = await axios.get(`${API_BASE_URL}/api/groups/available`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  },
+
   async getById(id) {
     const response = await axios.get(`${API_BASE_URL}/api/groups/${id}`, {
       headers: getAuthHeaders()
@@ -53,7 +60,9 @@ export const groupsAPI = {
     return response.data;
   },
 
-  async addMember(id, userId) {
+  async addMember(id, data) {
+    // Acepta tanto { userId } como userId directamente
+    const userId = typeof data === 'object' ? data.userId : data;
     const response = await axios.post(`${API_BASE_URL}/api/groups/${id}/members`, 
       { userId },
       { headers: getAuthHeaders() }

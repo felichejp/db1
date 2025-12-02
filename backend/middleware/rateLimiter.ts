@@ -12,13 +12,18 @@ export const generalLimiter = rateLimit({
 });
 
 /**
- * Rate limiter para autenticación: 5 requests por 15 minutos por IP
+ * Rate limiter para autenticación: 10 requests por 15 minutos por IP
+ * Aumentado para desarrollo
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5,
+  max: 10, // Aumentado de 5 a 10 para desarrollo
   message: 'Demasiados intentos de autenticación, intenta de nuevo más tarde.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => {
+    // En desarrollo, puedes saltar el rate limit si es necesario
+    return process.env.NODE_ENV === 'development' && req.headers['x-skip-rate-limit'] === 'true';
+  }
 });
 

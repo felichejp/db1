@@ -3,6 +3,9 @@ import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
 import GroupsView from './views/GroupsView.js';
+import TutorView from './views/TutorView.js';
+import ProfesorView from './views/ProfesorView.js';
+import UsersView from './views/UsersView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -22,7 +25,9 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
-    // TODO: Agregar más rutas cuando se implementen las vistas
+    this.routes.set('#/tutor', { view: TutorView, protected: true });
+    this.routes.set('#/profesor', { view: ProfesorView, protected: true });
+    this.routes.set('#/users', { view: UsersView, protected: true });
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());

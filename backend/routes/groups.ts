@@ -6,7 +6,9 @@ import { validateId, validateCreateGroup } from '../middleware/validate';
 const router = Router();
 
 router.get('/', authenticateToken, groupController.getGroups);
+router.get('/available', authenticateToken, groupController.getAvailableGroups);
 router.post('/', authenticateToken, authorizeRole('Profesor', 'Admin'), validateCreateGroup, groupController.createGroup);
+router.get('/tutor/:userId/count', authenticateToken, groupController.getTutorGroupsCount);
 router.get('/:id', authenticateToken, validateId, groupController.getGroupById);
 router.put('/:id', authenticateToken, validateId, groupController.updateGroup);
 router.delete('/:id', authenticateToken, validateId, groupController.deleteGroup);

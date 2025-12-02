@@ -1,6 +1,7 @@
 import authService from '../services/authService.js';
 import { groupsAPI } from '../api/groups.js';
 import { sessionsAPI } from '../api/sessions.js';
+import { adminAPI } from '../api/admin.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
@@ -43,38 +44,110 @@ class DashboardView {
     const content = document.getElementById('dashboard-content');
     
     try {
-      const [groupsRes, sessionsRes] = await Promise.all([
-        groupsAPI.getAll(),
-        sessionsAPI.getAll()
-      ]);
-
-      const groups = groupsRes.success ? groupsRes.data : [];
-      const sessions = sessionsRes.success ? sessionsRes.data : [];
-
-      let html = '';
-
       if (user.role === 'Admin') {
-        html = this.renderAdminDashboard(groups, sessions);
-      } else if (user.role === 'Profesor') {
-        html = this.renderProfesorDashboard(groups, sessions);
-      } else if (user.role === 'Tutor') {
-        html = this.renderTutorDashboard(groups, sessions);
+        const statsRes = await adminAPI.getStats();
+        const stats = statsRes.success ? statsRes.data : {};
+        const [groupsRes, sessionsRes] = await Promise.all([
+          groupsAPI.getAll(),
+          sessionsAPI.getAll()
+        ]);
+        const groups = groupsRes.success ? groupsRes.data : [];
+        const sessions = sessionsRes.success ? sessionsRes.data : [];
+        content.innerHTML = this.renderAdminDashboard(stats, groups, sessions);
       } else {
-        html = this.renderEstudianteDashboard(groups, sessions);
-      }
+        const [groupsRes, sessionsRes] = await Promise.all([
+          groupsAPI.getAll(),
+          sessionsAPI.getAll()
+        ]);
 
-      content.innerHTML = html;
+        const groups = groupsRes.success ? groupsRes.data : [];
+        const sessions = sessionsRes.success ? sessionsRes.data : [];
+
+        let html = '';
+
+        if (user.role === 'Profesor') {
+          html = this.renderProfesorDashboard(groups, sessions);
+        } else if (user.role === 'Tutor') {
+          html = this.renderTutorDashboard(groups, sessions);
+        } else {
+          html = this.renderEstudianteDashboard(groups, sessions);
+        }
+
+        content.innerHTML = html;
+      }
     } catch (error) {
       content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
     }
   }
 
-  renderAdminDashboard(groups, sessions) {
+  renderAdminDashboard(stats, groups, sessions) {
     return `
-      <div>
-        <h2>Estadísticas</h2>
-        <p>Grupos: ${groups.length}</p>
-        <p>Sesiones: ${sessions.length}</p>
+      <div class="admin-dashboard">
+        <div class="admin-stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__icon">👥</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.estudiantes || 0}</h3>
+              <p class="stat-card__label">Estudiantes</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">🎓</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.tutors || 0}</h3>
+              <p class="stat-card__label">Asesores</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">👨‍🏫</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.profesores || 0}</h3>
+              <p class="stat-card__label">Responsables</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">👨‍👩‍👧‍👦</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.groups || 0}</h3>
+              <p class="stat-card__label">Grupos</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">📚</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.topSubject?.materia || 'N/A'}</h3>
+              <p class="stat-card__label">Materia más popular</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">📊</div>
+            <div class="stat-card__content">
+              <h3 class="stat-card__value">${stats.topGroup?.count || 0}</h3>
+              <p class="stat-card__label">Mayor cant. alumnos (${stats.topGroup?.nombre || 'N/A'})</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-actions-section">
+          <h2>Gestión</h2>
+          <div class="admin-actions-grid">
+            <a href="#/groups" class="admin-action-card">
+              <div class="admin-action-card__icon">👨‍👩‍👧‍👦</div>
+              <h3>Gestionar Grupos</h3>
+              <p>Crear, editar y asignar grupos</p>
+            </a>
+            <a href="#/users" class="admin-action-card">
+              <div class="admin-action-card__icon">👥</div>
+              <h3>Gestionar Usuarios</h3>
+              <p>Ver y administrar usuarios</p>
+            </a>
+            <a href="#/sessions" class="admin-action-card">
+              <div class="admin-action-card__icon">📅</div>
+              <h3>Gestionar Sesiones</h3>
+              <p>Ver y administrar sesiones</p>
+            </a>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -93,8 +166,10 @@ class DashboardView {
   renderTutorDashboard(groups, sessions) {
     return `
       <div>
-        <h2>Mis Sesiones (${sessions.length})</h2>
-        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No tienes sesiones asignadas</p>'}
+        <h2>Mis Grupos (${groups.length})</h2>
+        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
+        <h2 class="mt-3">Próximas Sesiones</h2>
+        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
       </div>
     `;
   }

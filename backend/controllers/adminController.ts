@@ -4,15 +4,36 @@ import { query } from '../config/database';
 
 export async function getStats(req: Request, res: Response): Promise<void> {
   try {
-    const [users, groups, sessions, tutors] = await Promise.all([
+    const [users, groups, sessions, tutors, estudiantes, profesores] = await Promise.all([
       query('SELECT COUNT(*) as count FROM users'),
       query('SELECT COUNT(*) as count FROM groups'),
       query('SELECT COUNT(*) as count FROM sessions'),
-      query('SELECT COUNT(*) as count FROM tutors')
+      query('SELECT COUNT(*) as count FROM tutors'),
+      query("SELECT COUNT(*) as count FROM users WHERE role = 'Estudiante'"),
+      query("SELECT COUNT(*) as count FROM users WHERE role = 'Profesor'")
     ]);
 
     const activeSessions = await query(
       "SELECT COUNT(*) as count FROM sessions WHERE estado IN ('programada', 'en_curso')"
+    );
+
+    // Obtener materia más popular
+    const topSubject = await query(
+      `SELECT ts.materia, COUNT(*) as count
+       FROM tutor_subjects ts
+       GROUP BY ts.materia
+       ORDER BY count DESC
+       LIMIT 1`
+    );
+
+    // Obtener grupo con más estudiantes
+    const topGroup = await query(
+      `SELECT g.nombre, COUNT(gm."userId") as count
+       FROM groups g
+       LEFT JOIN group_members gm ON g.id = gm."groupId"
+       GROUP BY g.id, g.nombre
+       ORDER BY count DESC
+       LIMIT 1`
     );
 
     sendSuccess(res, {
@@ -20,7 +41,11 @@ export async function getStats(req: Request, res: Response): Promise<void> {
       groups: parseInt(groups.rows[0].count, 10),
       sessions: parseInt(sessions.rows[0].count, 10),
       tutors: parseInt(tutors.rows[0].count, 10),
-      activeSessions: parseInt(activeSessions.rows[0].count, 10)
+      estudiantes: parseInt(estudiantes.rows[0].count, 10),
+      profesores: parseInt(profesores.rows[0].count, 10),
+      activeSessions: parseInt(activeSessions.rows[0].count, 10),
+      topSubject: topSubject.rows[0] || null,
+      topGroup: topGroup.rows[0] || null
     });
   } catch (error) {
     console.error('Error en getStats:', error);

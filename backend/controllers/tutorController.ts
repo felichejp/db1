@@ -5,8 +5,21 @@ import { matchTutorToGroup } from '../utils/matching';
 
 export async function getTutors(req: Request, res: Response): Promise<void> {
   try {
+    // Primero, asegurarse de que todos los usuarios con rol Tutor tengan registro en tutors
+    await query(
+      `INSERT INTO tutors ("userId")
+       SELECT u.id
+       FROM users u
+       WHERE u.role = 'Tutor'
+       AND NOT EXISTS (
+         SELECT 1 FROM tutors t WHERE t."userId" = u.id
+       )
+       ON CONFLICT DO NOTHING`
+    );
+
+    // Ahora obtener todos los tutores
     const result = await query(
-      `SELECT t.*, u.email, u.nombre, u.grado
+      `SELECT t.*, u.email, u.nombre, u.grado, u.id as "userId"
        FROM tutors t
        JOIN users u ON t."userId" = u.id
        ORDER BY t."ratingPromedio" DESC`

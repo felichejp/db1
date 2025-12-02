@@ -12,12 +12,23 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 
     let result;
     if (req.user.role === 'Admin') {
-      result = await query('SELECT * FROM sessions ORDER BY fecha DESC, "horaInicio" DESC');
+      result = await query(`
+        SELECT s.*, u.nombre as "nombreTutor" 
+        FROM sessions s
+        LEFT JOIN tutors t ON s."tutorId" = t.id
+        LEFT JOIN users u ON t."userId" = u.id
+        ORDER BY s.fecha DESC, s."horaInicio" DESC
+      `);
     } else if (req.user.role === 'Tutor') {
       const tutorResult = await query('SELECT id FROM tutors WHERE "userId" = $1', [req.user.userId]);
       if (tutorResult.rows.length > 0) {
         result = await query(
-          'SELECT * FROM sessions WHERE "tutorId" = $1 ORDER BY fecha DESC, "horaInicio" DESC',
+          `SELECT s.*, u.nombre as "nombreTutor"
+           FROM sessions s
+           LEFT JOIN tutors t ON s."tutorId" = t.id
+           LEFT JOIN users u ON t."userId" = u.id
+           WHERE s."tutorId" = $1 
+           ORDER BY s.fecha DESC, s."horaInicio" DESC`,
           [tutorResult.rows[0].id]
         );
       } else {
@@ -25,8 +36,11 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
       }
     } else {
       result = await query(
-        `SELECT s.* FROM sessions s
+        `SELECT s.*, u.nombre as "nombreTutor"
+         FROM sessions s
          JOIN group_members gm ON s."groupId" = gm."groupId"
+         LEFT JOIN tutors t ON s."tutorId" = t.id
+         LEFT JOIN users u ON t."userId" = u.id
          WHERE gm."userId" = $1
          ORDER BY s.fecha DESC, s."horaInicio" DESC`,
         [req.user.userId]
@@ -42,13 +56,13 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 
 export async function createSession(req: Request, res: Response): Promise<void> {
   try {
-    const { groupId, tutorId, fecha, horaInicio, horaFin, tema } = req.body;
+    const { groupId, tutorId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
 
     const result = await query(
-      `INSERT INTO sessions ("groupId", "tutorId", fecha, "horaInicio", "horaFin", tema)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO sessions ("groupId", "tutorId", fecha, "horaInicio", "horaFin", tema, materia, cupo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [groupId, tutorId || null, fecha, horaInicio, horaFin, tema || null]
+      [groupId, tutorId || null, fecha, horaInicio, horaFin, tema || null, materia || null, cupo || null]
     );
 
     emitToGroup(groupId, 'session_updated', result.rows[0]);
@@ -214,3 +228,68 @@ export async function getSessionsCalendar(req: Request, res: Response): Promise<
 }
 
 
+export async function requestSession(req: Request, res: Response): Promise<void> {
+  try {
+    const { groupId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
+
+    // Crear sesión con estado 'pendiente'
+    const result = await query(
+      `INSERT INTO sessions ("groupId", "tutorId", fecha, "horaInicio", "horaFin", tema, materia, cupo, estado)
+       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, 'pendiente')
+       RETURNING *`,
+      [groupId, fecha, horaInicio, horaFin, tema || null, materia || null, cupo || null]
+    );
+
+    // Notificar a admins y profesores (esto requeriría lógica adicional de socket, por ahora solo al grupo)
+    emitToGroup(groupId, 'session_requested', result.rows[0]);
+
+    sendSuccess(res, result.rows[0], 'Solicitud enviada exitosamente', 201);
+  } catch (error) {
+    console.error('Error en requestSession:', error);
+    sendError(res, 'Error al solicitar sesión', 500);
+  }
+}
+
+export async function updateSessionStatus(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { estado, tutorId } = req.body; // 'programada' (aprobar) o 'rechazada'
+
+    if (!['programada', 'rechazada'].includes(estado)) {
+      sendError(res, 'Estado inválido', 400);
+      return;
+    }
+
+    let result;
+    if (estado === 'programada') {
+      // Aprobar: asignar tutor (si se envía) y cambiar estado
+      result = await query(
+        `UPDATE sessions 
+         SET estado = $1, "tutorId" = COALESCE($2, "tutorId"), "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id = $3 
+         RETURNING *`,
+        [estado, tutorId || null, id]
+      );
+    } else {
+      // Rechazar
+      result = await query(
+        `UPDATE sessions 
+         SET estado = $1, "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id = $2 
+         RETURNING *`,
+        [estado, id]
+      );
+    }
+
+    if (result.rows.length === 0) {
+      sendError(res, 'Sesión no encontrada', 404);
+      return;
+    }
+
+    emitToGroup(result.rows[0].groupId, 'session_status_updated', result.rows[0]);
+    sendSuccess(res, result.rows[0], `Solicitud ${estado === 'programada' ? 'aprobada' : 'rechazada'}`);
+  } catch (error) {
+    console.error('Error en updateSessionStatus:', error);
+    sendError(res, 'Error al actualizar estado de la solicitud', 500);
+  }
+}

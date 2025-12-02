@@ -13,6 +13,8 @@ router.put('/:id', authenticateToken, validateId, sessionController.updateSessio
 router.delete('/:id', authenticateToken, validateId, sessionController.deleteSession);
 router.put('/:id/start', authenticateToken, validateId, sessionController.startSession);
 router.put('/:id/complete', authenticateToken, validateId, sessionController.completeSession);
+router.post('/request', authenticateToken, sessionController.requestSession);
+router.put('/:id/status', authenticateToken, authorizeRole('Admin', 'Profesor', 'Tutor'), validateId, sessionController.updateSessionStatus);
 
 export default router;
 

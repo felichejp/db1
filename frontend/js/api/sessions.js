@@ -41,6 +41,16 @@ export const sessionsAPI = {
       params: { startDate, endDate }
     });
     return response.data;
+  },
+
+  async request(data) {
+    const response = await axios.post(`${API_BASE_URL}/api/sessions/request`, data);
+    return response.data;
+  },
+
+  async updateStatus(id, data) {
+    const response = await axios.put(`${API_BASE_URL}/api/sessions/${id}/status`, data);
+    return response.data;
   }
 };
 

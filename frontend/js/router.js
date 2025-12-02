@@ -2,6 +2,9 @@ import authService from './services/authService.js';
 import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
+import SessionsView from './views/SessionsView.js';
+import GroupsView from './views/GroupsView.js';
+import ProfileView from './views/ProfileView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -21,17 +24,21 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
+    this.routes.set('#/sessions', { view: SessionsView, protected: true });
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
+    this.routes.set('#/profile', { view: ProfileView, protected: true });
     // TODO: Agregar más rutas cuando se implementen las vistas
 
     // Escuchar cambios de hash
     window.addEventListener('hashchange', () => this.handleRoute());
-    
+
     // Manejar ruta inicial
     this.handleRoute();
   }
 
   handleRoute() {
     const hash = window.location.hash || '#/dashboard';
+    console.log('Navigating to:', hash);
     const route = this.routes.get(hash);
 
     // Si no hay ruta, mostrar 404

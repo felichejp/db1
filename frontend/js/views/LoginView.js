@@ -11,25 +11,36 @@ class LoginView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
-        <div class="card__header">
-          <h2 class="card__title">Iniciar Sesión</h2>
-        </div>
-        <div class="card__body">
-          <form id="login-form">
-            <div class="form-group">
-              <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" class="form-input" required>
+      <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 420px;">
+          <div class="card__header text-center" style="border-bottom: none; padding-bottom: 0;">
+            <h2 class="card__title" style="font-size: 2rem; margin-bottom: 0.5rem;">Bienvenido</h2>
+            <p class="text-muted">Inicia sesión para continuar</p>
+          </div>
+          
+          <div class="card__body">
+            <form id="login-form">
+              <div class="form-group">
+                <label class="form-label" for="email">Correo Electrónico</label>
+                <input type="email" id="email" class="form-input" placeholder="ejemplo@correo.com" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="password">Contraseña</label>
+                <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+              </div>
+              
+              <button type="submit" class="btn btn-primary w-full" style="margin-top: 1rem;">
+                Iniciar Sesión
+              </button>
+            </form>
+            
+            <div class="text-center mt-3">
+              <p class="text-muted" style="font-size: 0.9rem;">
+                ¿No tienes cuenta? <a href="#/register" style="font-weight: 600;">Regístrate aquí</a>
+              </p>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="password">Contraseña</label>
-              <input type="password" id="password" class="form-input" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar Sesión</button>
-          </form>
-          <p class="text-center mt-2">
-            ¿No tienes cuenta? <a href="#/register">Regístrate aquí</a>
-          </p>
+          </div>
         </div>
       </div>
     `;
@@ -72,5 +83,6 @@ class LoginView {
 }
 
 export default new LoginView();
+
 
 

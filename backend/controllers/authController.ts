@@ -10,7 +10,7 @@ import { query } from '../config/database';
  */
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, nombre, role, grado } = req.body;
+    const { email, password, nombre, role, grado, telefono, carrera } = req.body;
 
     // Verificar si el email ya existe
     const existingUser = await query(
@@ -28,10 +28,10 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     // Crear usuario
     const result = await query(
-      `INSERT INTO users (email, "passwordHash", nombre, role, grado)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, email, nombre, role, grado`,
-      [email, passwordHash, nombre, role, grado || null]
+      `INSERT INTO users (email, "passwordHash", nombre, role, grado, telefono, carrera)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, email, nombre, role, grado, telefono, carrera`,
+      [email, passwordHash, nombre, role, grado || null, telefono || null, carrera || null]
     );
 
     const user = result.rows[0];

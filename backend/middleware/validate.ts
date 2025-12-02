@@ -28,6 +28,8 @@ export const validateRegister = [
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
   body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+  body('telefono').optional().isString().withMessage('Teléfono inválido'),
+  body('carrera').optional().isString().withMessage('Carrera inválida'),
   validate
 ];
 
@@ -68,6 +70,8 @@ export const validateCreateSession = [
   body('horaFin').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Hora de fin inválida (HH:mm)'),
   body('tutorId').optional().isInt({ min: 1 }),
   body('tema').optional().isString(),
+  body('materia').optional().isString().withMessage('Materia debe ser texto'),
+  body('cupo').optional().isInt({ min: 1 }).withMessage('Cupo debe ser mayor a 0'),
   validate
 ];
 

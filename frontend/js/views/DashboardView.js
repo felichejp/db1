@@ -41,6 +41,22 @@ class DashboardView {
   }
 
   async loadDashboardContent(user) {
+    // Redirigir a dashboards específicos según el rol
+    if (user.role === 'Admin') {
+      window.location.hash = '#/admin/dashboard';
+      return;
+    } else if (user.role === 'Profesor') {
+      window.location.hash = '#/coordinator/dashboard';
+      return;
+    } else if (user.role === 'Tutor') {
+      window.location.hash = '#/tutor/dashboard';
+      return;
+    } else if (user.role === 'Estudiante') {
+      window.location.hash = '#/student/dashboard';
+      return;
+    }
+
+    // Fallback al dashboard genérico si no hay redirección
     const content = document.getElementById('dashboard-content');
     
     try {

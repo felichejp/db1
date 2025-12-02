@@ -16,29 +16,26 @@ class Sidebar {
 
     const roleMenus = {
       Admin: [
-        ...baseItems,
-        { path: '#/admin', label: 'Administración', icon: '⚙️' },
-        { path: '#/users', label: 'Usuarios', icon: '👥' },
+        { path: '#/admin/dashboard', label: 'Dashboard', icon: '📊' },
         { path: '#/groups', label: 'Grupos', icon: '👨‍👩‍👧‍👦' },
-        { path: '#/sessions', label: 'Sesiones', icon: '📅' }
+        { path: '#/admin/users', label: 'Usuarios', icon: '👥' },
+        { path: '#/admin/tutors', label: 'Asesores', icon: '🎓' },
+        { path: '#/admin/sessions', label: 'Sesiones', icon: '📅' }
       ],
       Profesor: [
-        ...baseItems,
+        { path: '#/coordinator/dashboard', label: 'Dashboard', icon: '📊' },
         { path: '#/groups', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
-        { path: '#/sessions', label: 'Sesiones', icon: '📅' },
-        { path: '#/tutors', label: 'Tutores', icon: '🎓' }
+        { path: '#/admin/sessions', label: 'Sesiones', icon: '📅' }
       ],
       Tutor: [
-        ...baseItems,
-        { path: '#/sessions', label: 'Mis Sesiones', icon: '📅' },
+        { path: '#/tutor/dashboard', label: 'Dashboard', icon: '📊' },
         { path: '#/groups', label: 'Grupos', icon: '👨‍👩‍👧‍👦' },
-        { path: '#/profile', label: 'Mi Perfil', icon: '👤' }
+        { path: '#/admin/sessions', label: 'Mis Sesiones', icon: '📅' }
       ],
       Estudiante: [
-        ...baseItems,
+        { path: '#/student/dashboard', label: 'Dashboard', icon: '📊' },
         { path: '#/groups', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
-        { path: '#/sessions', label: 'Sesiones', icon: '📅' },
-        { path: '#/profile', label: 'Mi Perfil', icon: '👤' }
+        { path: '#/admin/sessions', label: 'Sesiones', icon: '📅' }
       ]
     };
 

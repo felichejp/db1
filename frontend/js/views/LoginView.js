@@ -5,31 +5,56 @@ import Loading from '../components/Loading.js';
 import { validateForm } from '../utils/validators.js';
 
 /**
- * Vista de Login
+ * Vista de Login - Diseño moderno y centrado
  */
 class LoginView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
-        <div class="card__header">
-          <h2 class="card__title">Iniciar Sesión</h2>
-        </div>
-        <div class="card__body">
-          <form id="login-form">
+      <div class="login-container">
+        <div class="login-card">
+          <div class="login-header">
+            <h1 class="login-title">Sistema de Asesorías</h1>
+            <p class="login-subtitle">Inicia sesión con tu cuenta</p>
+          </div>
+          <form id="login-form" class="login-form">
             <div class="form-group">
-              <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" class="form-input" required>
+              <label class="form-label" for="email">
+                <span class="form-label-icon">📧</span>
+                Usuario / Correo Institucional
+              </label>
+              <input 
+                type="email" 
+                id="email" 
+                class="form-input" 
+                placeholder="usuario@institucion.edu"
+                required
+                autocomplete="email"
+              >
             </div>
             <div class="form-group">
-              <label class="form-label" for="password">Contraseña</label>
-              <input type="password" id="password" class="form-input" required>
+              <label class="form-label" for="password">
+                <span class="form-label-icon">🔒</span>
+                Contraseña
+              </label>
+              <input 
+                type="password" 
+                id="password" 
+                class="form-input" 
+                placeholder="Ingresa tu contraseña"
+                required
+                autocomplete="current-password"
+              >
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar Sesión</button>
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>Iniciar Sesión</span>
+            </button>
           </form>
-          <p class="text-center mt-2">
-            ¿No tienes cuenta? <a href="#/register">Regístrate aquí</a>
-          </p>
+          <div class="login-footer">
+            <p class="login-footer-text">
+              ¿Nuevo usuario? <a href="#/register" class="login-link">Regístrate aquí</a>
+            </p>
+          </div>
         </div>
       </div>
     `;

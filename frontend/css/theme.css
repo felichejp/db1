@@ -1,34 +1,38 @@
 :root {
-  /* Colores de fondo */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --bg-tertiary: #3a3a3a;
-  --bg-hover: #404040;
+  /* Colores de fondo - Tema púrpura/índigo moderno */
+  --bg-primary: #0a0e27;
+  --bg-secondary: #1a1f3a;
+  --bg-tertiary: #252b4a;
+  --bg-hover: #2d3558;
   
   /* Colores de texto */
-  --text-primary: #e0e0e0;
-  --text-secondary: #b0b0b0;
-  --text-muted: #808080;
+  --text-primary: #e8eaf6;
+  --text-secondary: #b4b9d4;
+  --text-muted: #7c82a3;
   
-  /* Colores de acento */
-  --accent-color: #4a9eff;
-  --accent-hover: #5baaff;
-  --accent-active: #3a8eef;
+  /* Colores de acento - Púrpura/índigo vibrante */
+  --accent-color: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-active: #5b21b6;
+  --accent-light: #a78bfa;
+  --accent-dark: #4c1d95;
   
   /* Colores de estado */
-  --success-color: #4caf50;
-  --error-color: #f44336;
-  --warning-color: #ff9800;
-  --info-color: #2196f3;
+  --success-color: #10b981;
+  --error-color: #f43f5e;
+  --warning-color: #f59e0b;
+  --info-color: #06b6d4;
   
   /* Colores de borde */
-  --border-color: #404040;
-  --border-light: #505050;
+  --border-color: #2d3558;
+  --border-light: #3d4568;
   
   /* Sombras */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 4px rgba(10, 14, 39, 0.5);
+  --shadow-md: 0 4px 8px rgba(10, 14, 39, 0.6);
+  --shadow-lg: 0 8px 16px rgba(10, 14, 39, 0.7);
+  --shadow-xl: 0 12px 24px rgba(10, 14, 39, 0.8);
+  --shadow-purple: 0 4px 20px rgba(124, 58, 237, 0.3);
   
   /* Espaciado */
   --spacing-xs: 0.25rem;

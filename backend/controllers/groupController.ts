@@ -47,6 +47,19 @@ export async function createGroup(req: Request, res: Response): Promise<void> {
     const { nombre, descripcion, profesorId } = req.body;
     const finalProfesorId = profesorId || (req.user?.role === 'Profesor' ? req.user.userId : null);
 
+    // Validar límite de grupos por profesor (máximo 6)
+    if (finalProfesorId) {
+      const countResult = await query(
+        'SELECT COUNT(*) as count FROM groups WHERE "profesorId" = $1',
+        [finalProfesorId]
+      );
+      const groupCount = parseInt(countResult.rows[0].count, 10);
+      if (groupCount >= 6) {
+        sendError(res, 'El profesor ya tiene el máximo de grupos asignados (6)', 400);
+        return;
+      }
+    }
+
     const result = await query(
       `INSERT INTO groups (nombre, descripcion, "profesorId")
        VALUES ($1, $2, $3)
@@ -385,12 +398,28 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Agregar miembro
-    await addGroupMember(
-      { params: { id: invitation.groupId }, body: { userId: req.user.userId } } as Request,
-      res,
-      () => {}
+    // Agregar miembro directamente
+    const countResult = await query(
+      'SELECT COUNT(*) as count FROM group_members WHERE "groupId" = $1',
+      [invitation.groupId]
     );
+    if (parseInt(countResult.rows[0].count, 10) >= 5) {
+      sendError(res, 'El grupo ya tiene el máximo de miembros (5)', 400);
+      return;
+    }
+
+    const memberResult = await query(
+      `INSERT INTO group_members ("groupId", "userId")
+       VALUES ($1, $2)
+       ON CONFLICT ("groupId", "userId") DO NOTHING
+       RETURNING *`,
+      [invitation.groupId, req.user.userId]
+    );
+
+    if (memberResult.rows.length === 0) {
+      sendError(res, 'El usuario ya es miembro del grupo', 400);
+      return;
+    }
 
     // Actualizar invitación
     await query(

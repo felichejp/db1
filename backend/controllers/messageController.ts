@@ -71,7 +71,7 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
       [groupId, req.user.userId]
     );
 
-    const memberIds = membersResult.rows.map(row => row.userId);
+    const memberIds = membersResult.rows.map((row: any) => row.userId);
 
     // Crear notificaciones para cada miembro
     for (const memberId of memberIds) {

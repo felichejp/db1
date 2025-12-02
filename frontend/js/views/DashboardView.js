@@ -13,6 +13,26 @@ class DashboardView {
     const user = authService.getCurrentUser();
     if (!user) return;
 
+    // Redirigir a vista específica según el rol
+    if (user.role === 'Estudiante') {
+      const EstudianteView = (await import('./EstudianteView.js')).default;
+      EstudianteView.render();
+      return;
+    } else if (user.role === 'Tutor') {
+      const TutorView = (await import('./TutorView.js')).default;
+      TutorView.render();
+      return;
+    } else if (user.role === 'Profesor') {
+      const ProfesorView = (await import('./ProfesorView.js')).default;
+      ProfesorView.render();
+      return;
+    } else if (user.role === 'Admin') {
+      const AdminView = (await import('./AdminView.js')).default;
+      AdminView.render();
+      return;
+    }
+
+    // Fallback al dashboard original
     const container = document.getElementById('view-container');
     container.innerHTML = `
       <div class="card">

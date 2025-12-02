@@ -31,7 +31,7 @@ export function sendError(
     success: false,
     code,
     message,
-    ...(details && { details })
+    ...(details ? { details } : {})
   };
   res.status(code).json(response);
 }

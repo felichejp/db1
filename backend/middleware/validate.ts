@@ -1,4 +1,4 @@
-import { body, param, query, ValidationChain } from 'express-validator';
+import { body, param } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import { sendError } from '../utils/response';
@@ -9,7 +9,19 @@ import { sendError } from '../utils/response';
 export function validate(req: Request, res: Response, next: NextFunction): void {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    sendError(res, 'Errores de validación', 400, errors.array());
+    // Formatear errores para que sean más legibles
+    const formattedErrors = errors.array().map(err => ({
+      field: err.type === 'field' ? err.path : 'unknown',
+      message: err.msg,
+      value: err.type === 'field' ? err.value : undefined
+    }));
+    
+    // Si hay un solo error, mostrar su mensaje directamente
+    const errorMessage = formattedErrors.length === 1 
+      ? formattedErrors[0].message 
+      : 'Errores de validación';
+    
+    sendError(res, errorMessage, 400, formattedErrors);
     return;
   }
   next();
@@ -27,7 +39,16 @@ export const validateRegister = [
   body('role')
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
-  body('grado').optional().isInt({ min: 1, max:10 }).withMessage('Grado inválido'),
+  body('grado')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true; // Permitir null, undefined o string vacío
+      }
+      const num = parseInt(value, 10);
+      return !isNaN(num) && num >= 1 && num <= 10;
+    })
+    .withMessage('Grado inválido (debe ser un número entre 1 y 10)'),
   validate
 ];
 

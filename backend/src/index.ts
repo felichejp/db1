@@ -34,7 +34,7 @@ app.use(cors());
 app.use(express.json());
 
 // Health endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -43,7 +43,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 
-app.post('/api/verify-code', async (req: Request, res: Response) => {
+app.post('/api/verify-code', async (req: Request, res: Response): Promise<void> => {
   try {
     const { idLead, codeEscritoPorElUsuario } = req.body;
     // consultar el codigo en la base de datos
@@ -59,11 +59,12 @@ app.post('/api/verify-code', async (req: Request, res: Response) => {
     const result = await database.query(queryCodeLead, [idLead]);
 
 if (result.rows.length === 0) {
-  return res.status(404).json({
+  res.status(404).json({
     status: 'error',
     message: 'No se encontró el código para el idLead proporcionado',
     verified: false,
   });
+  return;
 }
 
 const codeFromDatabase = result.rows[0].code;
@@ -71,17 +72,19 @@ const codeFromUsuario = codeEscritoPorElUsuario;
 const isVerified = codeFromDatabase === codeFromUsuario;
 
 if (isVerified) {
-  return res.status(200).json({
+  res.status(200).json({
     status: 'ok',
     message: 'Código verificado correctamente',
     verified: true,
   });
+  return;
 } else {
-  return res.status(400).json({
+  res.status(400).json({
     status: 'error',
     message: 'Código incorrecto',
     verified: false,
   });
+  return;
 }
   } catch (error) {
     console.error('Error processing request:', error);
@@ -93,16 +96,17 @@ if (isVerified) {
   }
 });
 
-app.post('/api/send-code', async (req: Request, res: Response) => {
+app.post('/api/send-code', async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, institution, contactPhone, phone, password } = req.body as Lead;
     
     // Validate required fields
     if (!name || !institution || !contactPhone || !phone || !password) {
-      return res.status(400).json({
+      res.status(400).json({
         status: 'error',
         message: 'Missing required fields',
       });
+      return;
     }
 
     // Hash password before storing
@@ -160,10 +164,11 @@ app.post('/api/send-code', async (req: Request, res: Response) => {
     ]);
 
     if (!hashedPassword || !code ) {
-      return res.status(500).json({
+      res.status(500).json({
         status: 'error',
         message: 'Failed to save password or code',
       });
+      return;
     }
     console.log('Lead saved to database:', result.rows[0]);
 

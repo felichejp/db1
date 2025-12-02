@@ -13,6 +13,11 @@ router.get('/badges', authenticateToken, authorizeRole('Admin'), adminController
 router.post('/badges', authenticateToken, authorizeRole('Admin'), adminController.createBadge);
 router.post('/badges/:badgeId/assign/:userId', authenticateToken, authorizeRole('Admin'), validateId, adminController.assignBadge);
 
+// Rutas para asignaciones
+router.post('/groups/:groupId/assign-profesor', authenticateToken, authorizeRole('Admin'), validateId, adminController.assignProfesorToGroup);
+router.post('/groups/:groupId/assign-tutor', authenticateToken, authorizeRole('Admin'), validateId, adminController.assignTutorToGroup);
+router.post('/groups/:groupId/assign-alumno', authenticateToken, authorizeRole('Admin'), validateId, adminController.assignAlumnoToGroup);
+
 export default router;
 
 

@@ -17,11 +17,11 @@ import { TutorMatch } from '../types/global';
  * - Rating promedio (20%): 5 estrellas = 100 puntos, escala lineal
  */
 export async function matchTutorToGroup(
-  groupId: number,
-  materia: string,
-  fecha: string,
-  horaInicio: string,
-  horaFin: string
+  _groupId: number,
+  _materia: string,
+  _fecha: string,
+  _horaInicio: string,
+  _horaFin: string
 ): Promise<TutorMatch[]> {
   // TODO: Implementar consulta a base de datos
   // Esta función debe:
@@ -43,8 +43,9 @@ export async function matchTutorToGroup(
 
 /**
  * Calcula el score de matching para un tutor
+ * @internal - Función preparada para uso futuro cuando se implemente el algoritmo completo
  */
-function calculateScore(
+export function calculateScore(
   gradoScore: number,
   materiaScore: number,
   disponibilidadScore: number,

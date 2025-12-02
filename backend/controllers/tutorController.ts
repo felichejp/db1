@@ -3,7 +3,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { matchTutorToGroup } from '../utils/matching';
 
-export async function getTutors(req: Request, res: Response): Promise<void> {
+export async function getTutors(_req: Request, res: Response): Promise<void> {
   try {
     const result = await query(
       `SELECT t.*, u.email, u.nombre, u.grado

@@ -10,7 +10,7 @@ export function validateFile(
   res: Response,
   next: NextFunction
 ): void {
-  const file = req.file || (req as any).files?.[0];
+  const file = (req as any).file || (req as any).files?.[0];
 
   if (!file) {
     sendError(res, 'No se proporcionó ningún archivo', 400);

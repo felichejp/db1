@@ -3,6 +3,7 @@ import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
 import GroupView from './views/GroupView.js';
+import GroupDetailsView from './views/GroupDetailsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
@@ -26,7 +27,8 @@ class Router {
 
     // Definir rutas dinámicas (patrones)
     this.dynamicRoutes = [
-      { pattern: /^#\/groups\/(\d+)$/, view: GroupView, protected: true }
+      { pattern: /^#\/groups\/(\d+)$/, view: GroupView, protected: true },
+      { pattern: /^#\/groups\/(\d+)\/details$/, view: GroupDetailsView, protected: true }
     ];
 
     // Escuchar cambios de hash

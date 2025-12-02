@@ -7,7 +7,7 @@ class Modal {
     this.modal = null;
   }
 
-  show(title, content, footer = null) {
+  show(title, content, onShow = null, footer = null) {
     // Crear overlay
     this.overlay = document.createElement('div');
     this.overlay.className = 'modal-overlay';
@@ -33,6 +33,13 @@ class Modal {
     this.overlay.appendChild(this.modal);
     document.body.appendChild(this.overlay);
     window.currentModal = this;
+
+    // Ejecutar callback después de mostrar
+    if (onShow && typeof onShow === 'function') {
+      setTimeout(() => {
+        onShow();
+      }, 100);
+    }
 
     return this.modal;
   }

@@ -44,6 +44,31 @@ export async function createSession(req: Request, res: Response): Promise<void> 
   try {
     const { groupId, tutorId, fecha, horaInicio, horaFin, tema } = req.body;
 
+    // Validar límite de grupos únicos por tutor (máximo 3)
+    if (tutorId) {
+      const countResult = await query(
+        `SELECT COUNT(DISTINCT "groupId") as count 
+         FROM sessions 
+         WHERE "tutorId" = $1 AND estado != 'cancelada'`,
+        [tutorId]
+      );
+      const uniqueGroupCount = parseInt(countResult.rows[0].count, 10);
+      
+      // Verificar si el grupo ya está asignado a este tutor
+      const existingGroupResult = await query(
+        `SELECT COUNT(*) as count 
+         FROM sessions 
+         WHERE "tutorId" = $1 AND "groupId" = $2 AND estado != 'cancelada'`,
+        [tutorId, groupId]
+      );
+      const isExistingGroup = parseInt(existingGroupResult.rows[0].count, 10) > 0;
+      
+      if (!isExistingGroup && uniqueGroupCount >= 3) {
+        sendError(res, 'El tutor ya tiene el máximo de grupos asignados (3)', 400);
+        return;
+      }
+    }
+
     const result = await query(
       `INSERT INTO sessions ("groupId", "tutorId", fecha, "horaInicio", "horaFin", tema)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -82,6 +107,39 @@ export async function updateSession(req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const { tutorId, fecha, horaInicio, horaFin, tema, notas, estado } = req.body;
+
+    // Validar límite de grupos únicos por tutor si se está asignando un tutor
+    if (tutorId !== undefined) {
+      // Obtener el groupId actual de la sesión
+      const currentSessionResult = await query('SELECT "groupId" FROM sessions WHERE id = $1', [id]);
+      if (currentSessionResult.rows.length === 0) {
+        sendError(res, 'Sesión no encontrada', 404);
+        return;
+      }
+      const currentGroupId = currentSessionResult.rows[0].groupId;
+
+      const countResult = await query(
+        `SELECT COUNT(DISTINCT "groupId") as count 
+         FROM sessions 
+         WHERE "tutorId" = $1 AND estado != 'cancelada' AND id != $2`,
+        [tutorId, id]
+      );
+      const uniqueGroupCount = parseInt(countResult.rows[0].count, 10);
+      
+      // Verificar si el grupo ya está asignado a este tutor
+      const existingGroupResult = await query(
+        `SELECT COUNT(*) as count 
+         FROM sessions 
+         WHERE "tutorId" = $1 AND "groupId" = $2 AND estado != 'cancelada' AND id != $3`,
+        [tutorId, currentGroupId, id]
+      );
+      const isExistingGroup = parseInt(existingGroupResult.rows[0].count, 10) > 0;
+      
+      if (!isExistingGroup && uniqueGroupCount >= 3) {
+        sendError(res, 'El tutor ya tiene el máximo de grupos asignados (3)', 400);
+        return;
+      }
+    }
 
     const updates: string[] = [];
     const values: unknown[] = [];

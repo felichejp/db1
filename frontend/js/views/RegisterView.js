@@ -11,14 +11,22 @@ class RegisterView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+      <div class="card" style="max-width: 500px; margin: 2rem auto;">
         <div class="card__header">
-          <h2 class="card__title">Registro</h2>
+          <h2 class="card__title">Registro de Usuario</h2>
         </div>
         <div class="card__body">
           <form id="register-form">
             <div class="form-group">
-              <label class="form-label" for="reg-email">Email</label>
+              <label class="form-label" for="reg-nombre">Nombre</label>
+              <input type="text" id="reg-nombre" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-apellido">Apellido</label>
+              <input type="text" id="reg-apellido" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-email">Correo de la Institución</label>
               <input type="email" id="reg-email" class="form-input" required>
             </div>
             <div class="form-group">
@@ -26,24 +34,23 @@ class RegisterView {
               <input type="password" id="reg-password" class="form-input" required>
             </div>
             <div class="form-group">
-              <label class="form-label" for="reg-nombre">Nombre</label>
-              <input type="text" id="reg-nombre" class="form-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="reg-role">Rol</label>
+              <label class="form-label" for="reg-role">Tipo de Usuario</label>
               <select id="reg-role" class="form-select" required>
-                <option value="">Selecciona un rol</option>
-                <option value="Estudiante">Estudiante</option>
-                <option value="Tutor">Tutor</option>
+                <option value="">Selecciona un tipo</option>
+                <option value="Estudiante">Alumno</option>
+                <option value="Tutor">Asesor</option>
                 <option value="Profesor">Profesor</option>
                 <option value="Admin">Admin</option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1" max="10">
+              <input type="number" id="reg-grado" class="form-input" min="1" max="10" placeholder="Ej: 1-10">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
+            <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+              <button type="submit" class="btn btn-primary" style="flex: 1;">Registrar</button>
+              <button type="button" id="cancel-btn" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+            </div>
           </form>
           <p class="text-center mt-2">
             ¿Ya tienes cuenta? <a href="#/login">Inicia sesión aquí</a>
@@ -53,28 +60,47 @@ class RegisterView {
     `;
 
     const form = document.getElementById('register-form');
+    const cancelBtn = document.getElementById('cancel-btn');
+    
+    cancelBtn.addEventListener('click', () => {
+      window.location.hash = '#/login';
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const role = document.getElementById('reg-role').value;
-      if (role !== 'Estudiante') {
-        Notification.error('Solo se puede registar siendo estudiante');
+      if (!role) {
+        Notification.error('Debes seleccionar un tipo de usuario');
         return;
       }
 
-      const gradoV = document.getElementById('reg-grado').value;
+      const gradoV = document.getElementById('reg-grado').value.trim();
       
-      if(gradoV && (parseInt(gradoV) < 1 || parseInt(gradoV) > 10)){
-        Notification.error('Grado inválido, debe estar entre 1 y 10');
+      let grado = null;
+      if (gradoV) {
+        const gradoNum = parseInt(gradoV, 10);
+        if (isNaN(gradoNum) || gradoNum < 1 || gradoNum > 10) {
+          Notification.error('Grado inválido, debe estar entre 1 y 10');
+          return;
+        }
+        grado = gradoNum;
       }
 
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const apellido = document.getElementById('reg-apellido').value.trim();
+      
+      if (!nombre || !apellido) {
+        Notification.error('Nombre y apellido son requeridos');
+        return;
+      }
       
       const data = {
-        email: document.getElementById('reg-email').value,
+        email: document.getElementById('reg-email').value.trim(),
         password: document.getElementById('reg-password').value,
-        nombre: document.getElementById('reg-nombre').value,
-        role: document.getElementById('reg-role').value,
-        grado: document.getElementById('reg-grado').value || null
+        nombre: `${nombre} ${apellido}`.trim(),
+        role: role,
+        grado: grado
       };
 
       const validation = validateForm(data, {

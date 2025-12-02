@@ -4,23 +4,29 @@ import { query } from '../config/database';
 
 export async function getStats(req: Request, res: Response): Promise<void> {
   try {
-    const [users, groups, sessions, tutors] = await Promise.all([
+    const [users, groups, sessions, tutors, estudiantes, profesores] = await Promise.all([
       query('SELECT COUNT(*) as count FROM users'),
       query('SELECT COUNT(*) as count FROM groups'),
       query('SELECT COUNT(*) as count FROM sessions'),
-      query('SELECT COUNT(*) as count FROM tutors')
+      query('SELECT COUNT(*) as count FROM tutors'),
+      query("SELECT COUNT(*) as count FROM users WHERE role = 'Estudiante'"),
+      query("SELECT COUNT(*) as count FROM users WHERE role = 'Profesor'")
     ]);
 
-    const activeSessions = await query(
-      "SELECT COUNT(*) as count FROM sessions WHERE estado IN ('programada', 'en_curso')"
-    );
+    const [activeSessions, completedSessions] = await Promise.all([
+      query("SELECT COUNT(*) as count FROM sessions WHERE estado IN ('programada', 'en_curso')"),
+      query("SELECT COUNT(*) as count FROM sessions WHERE estado = 'completada'")
+    ]);
 
     sendSuccess(res, {
-      users: parseInt(users.rows[0].count, 10),
-      groups: parseInt(groups.rows[0].count, 10),
-      sessions: parseInt(sessions.rows[0].count, 10),
-      tutors: parseInt(tutors.rows[0].count, 10),
-      activeSessions: parseInt(activeSessions.rows[0].count, 10)
+      totalUsuarios: parseInt(users.rows[0].count, 10),
+      totalEstudiantes: parseInt(estudiantes.rows[0].count, 10),
+      totalTutores: parseInt(tutors.rows[0].count, 10),
+      totalProfesores: parseInt(profesores.rows[0].count, 10),
+      totalGrupos: parseInt(groups.rows[0].count, 10),
+      totalSesiones: parseInt(sessions.rows[0].count, 10),
+      sesionesActivas: parseInt(activeSessions.rows[0].count, 10),
+      sesionesCompletadas: parseInt(completedSessions.rows[0].count, 10)
     });
   } catch (error) {
     console.error('Error en getStats:', error);

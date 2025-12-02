@@ -21,6 +21,8 @@ import fileRoutes from './routes/files';
 import evaluationRoutes from './routes/evaluations';
 import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
+import tutoringRequestRoutes from './routes/tutoringRequests';
+import tutorRequestRoutes from './routes/tutorRequests';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
@@ -54,6 +56,8 @@ app.use('/api/files', fileRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tutoring-requests', tutoringRequestRoutes);
+app.use('/api/tutor-requests', tutorRequestRoutes);
 
 // Manejo de errores (debe ir al final)
 app.use(errorHandler);

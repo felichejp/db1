@@ -16,17 +16,69 @@ export async function getGroups(req: Request, res: Response): Promise<void> {
 
     let result;
     if (req.user.role === 'Admin') {
-      result = await query('SELECT * FROM groups ORDER BY "createdAt" DESC');
+      result = await query(
+        `SELECT g.*, 
+                u.nombre as "profesorNombre",
+                u.email as "profesorEmail",
+                (SELECT COUNT(*) FROM group_members WHERE "groupId" = g.id) as "numIntegrantes",
+                (SELECT tu.nombre FROM tutors t 
+                 JOIN users tu ON t."userId" = tu.id 
+                 WHERE t.id IN (SELECT DISTINCT "tutorId" FROM sessions WHERE "groupId" = g.id AND "tutorId" IS NOT NULL LIMIT 1)) as "tutorNombre"
+         FROM groups g
+         LEFT JOIN users u ON g."profesorId" = u.id
+         ORDER BY g."createdAt" DESC`
+      );
     } else if (req.user.role === 'Profesor') {
       result = await query(
-        'SELECT * FROM groups WHERE "profesorId" = $1 ORDER BY "createdAt" DESC',
+        `SELECT g.*, 
+                u.nombre as "profesorNombre",
+                u.email as "profesorEmail",
+                (SELECT COUNT(*) FROM group_members WHERE "groupId" = g.id) as "numIntegrantes",
+                (SELECT tu.nombre FROM tutors t 
+                 JOIN users tu ON t."userId" = tu.id 
+                 WHERE t.id IN (SELECT DISTINCT "tutorId" FROM sessions WHERE "groupId" = g.id AND "tutorId" IS NOT NULL LIMIT 1)) as "tutorNombre"
+         FROM groups g
+         LEFT JOIN users u ON g."profesorId" = u.id
+         WHERE g."profesorId" = $1
+         ORDER BY g."createdAt" DESC`,
         [req.user.userId]
       );
+    } else if (req.user.role === 'Tutor') {
+      // Tutor: grupos donde tiene sesiones
+      const tutorResult = await query('SELECT id FROM tutors WHERE "userId" = $1', [req.user.userId]);
+      if (tutorResult.rows.length > 0) {
+        const tutorId = tutorResult.rows[0].id;
+        result = await query(
+          `SELECT DISTINCT g.*, 
+                  u.nombre as "profesorNombre",
+                  u.email as "profesorEmail",
+                  (SELECT COUNT(*) FROM group_members WHERE "groupId" = g.id) as "numIntegrantes",
+                  tu.nombre as "tutorNombre"
+           FROM groups g
+           JOIN sessions s ON g.id = s."groupId"
+           LEFT JOIN users u ON g."profesorId" = u.id
+           LEFT JOIN tutors t ON s."tutorId" = t.id
+           LEFT JOIN users tu ON t."userId" = tu.id
+           WHERE s."tutorId" = $1
+           ORDER BY g."createdAt" DESC`,
+          [tutorId]
+        );
+      } else {
+        result = { rows: [] };
+      }
     } else {
-      // Estudiante o Tutor: grupos donde es miembro
+      // Estudiante: grupos donde es miembro
       result = await query(
-        `SELECT g.* FROM groups g
+        `SELECT g.*, 
+                u.nombre as "profesorNombre",
+                u.email as "profesorEmail",
+                (SELECT COUNT(*) FROM group_members WHERE "groupId" = g.id) as "numIntegrantes",
+                (SELECT tu.nombre FROM tutors t 
+                 JOIN users tu ON t."userId" = tu.id 
+                 WHERE t.id IN (SELECT DISTINCT "tutorId" FROM sessions WHERE "groupId" = g.id AND "tutorId" IS NOT NULL LIMIT 1)) as "tutorNombre"
+         FROM groups g
          JOIN group_members gm ON g.id = gm."groupId"
+         LEFT JOIN users u ON g."profesorId" = u.id
          WHERE gm."userId" = $1
          ORDER BY g."createdAt" DESC`,
         [req.user.userId]

@@ -11,42 +11,57 @@ class RegisterView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+      <div class="card" style="max-width: 500px; margin: 2rem auto;">
         <div class="card__header">
-          <h2 class="card__title">Registro</h2>
+          <h2 class="card__title">Registro de Usuario</h2>
+          <p class="text-muted">Crea tu cuenta para acceder al sistema de asesorías</p>
         </div>
         <div class="card__body">
           <form id="register-form">
             <div class="form-group">
-              <label class="form-label" for="reg-email">Email</label>
-              <input type="email" id="reg-email" class="form-input" required>
+              <label class="form-label" for="reg-nombre">
+                <i class="fas fa-user"></i> Nombre Completo
+              </label>
+              <input type="text" id="reg-nombre" class="form-input" placeholder="Juan Pérez García" required>
             </div>
             <div class="form-group">
-              <label class="form-label" for="reg-password">Contraseña</label>
-              <input type="password" id="reg-password" class="form-input" required>
+              <label class="form-label" for="reg-email">
+                <i class="fas fa-envelope"></i> Email
+              </label>
+              <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" required>
             </div>
             <div class="form-group">
-              <label class="form-label" for="reg-nombre">Nombre</label>
-              <input type="text" id="reg-nombre" class="form-input" required>
+              <label class="form-label" for="reg-password">
+                <i class="fas fa-lock"></i> Contraseña
+              </label>
+              <input type="password" id="reg-password" class="form-input" placeholder="Mínimo 8 caracteres" required>
+              <small class="form-text text-muted">Debe contener letras, números y caracteres especiales</small>
             </div>
             <div class="form-group">
-              <label class="form-label" for="reg-role">Rol</label>
+              <label class="form-label" for="reg-role">
+                <i class="fas fa-user-tag"></i> Rol
+              </label>
               <select id="reg-role" class="form-select" required>
                 <option value="">Selecciona un rol</option>
                 <option value="Estudiante">Estudiante</option>
                 <option value="Tutor">Tutor</option>
                 <option value="Profesor">Profesor</option>
-                <option value="Admin">Admin</option>
+                <option value="Admin">Administrador</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <label class="form-label" for="reg-grado">
+                <i class="fas fa-graduation-cap"></i> Grado (opcional)
+              </label>
+              <input type="number" id="reg-grado" class="form-input" min="1" max="12" placeholder="Ej: 1, 2, 3...">
+              <small class="form-text text-muted">Solo para estudiantes</small>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+              <i class="fas fa-user-plus"></i> Registrarse
+            </button>
           </form>
-          <p class="text-center mt-2">
-            ¿Ya tienes cuenta? <a href="#/login">Inicia sesión aquí</a>
+          <p class="text-center mt-3">
+            ¿Ya tienes cuenta? <a href="#/login" style="color: var(--primary-color);">Inicia sesión aquí</a>
           </p>
         </div>
       </div>

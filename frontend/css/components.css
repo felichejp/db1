@@ -625,4 +625,200 @@
   color: var(--text-primary);
 }
 
+/* Dashboard Styles */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.dashboard-card {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+}
+
+.dashboard-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dashboard-card h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
+}
+
+.stat-card {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: white;
+}
+
+.stat-card h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.9;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.group-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.group-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.list-group {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.temarios-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.temario-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+}
+
+.solicitudes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.solicitud-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.solicitud-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.chart-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+}
+
+.chart-placeholder {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-md);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.activity-list {
+  margin-top: var(--spacing-md);
+}
+
+.activity-list p {
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-list p:last-child {
+  border-bottom: none;
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .groups-grid,
+  .temarios-list,
+  .solicitudes-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-actions {
+    flex-direction: column;
+  }
+  
+  .admin-actions .btn {
+    width: 100%;
+  }
+}
+
 

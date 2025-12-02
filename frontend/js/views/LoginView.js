@@ -11,24 +11,31 @@ class LoginView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+      <div class="card" style="max-width: 450px; margin: 2rem auto;">
         <div class="card__header">
           <h2 class="card__title">Iniciar Sesión</h2>
+          <p class="text-muted">Ingresa tus credenciales para acceder al sistema</p>
         </div>
         <div class="card__body">
           <form id="login-form">
             <div class="form-group">
-              <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" class="form-input" required>
+              <label class="form-label" for="email">
+                <i class="fas fa-envelope"></i> Email
+              </label>
+              <input type="email" id="email" class="form-input" placeholder="tu@email.com" required>
             </div>
             <div class="form-group">
-              <label class="form-label" for="password">Contraseña</label>
-              <input type="password" id="password" class="form-input" required>
+              <label class="form-label" for="password">
+                <i class="fas fa-lock"></i> Contraseña
+              </label>
+              <input type="password" id="password" class="form-input" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar Sesión</button>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+              <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </button>
           </form>
-          <p class="text-center mt-2">
-            ¿No tienes cuenta? <a href="#/register">Regístrate aquí</a>
+          <p class="text-center mt-3">
+            ¿No tienes cuenta? <a href="#/register" style="color: var(--primary-color);">Regístrate aquí</a>
           </p>
         </div>
       </div>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asesorías entre Pares</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header se renderiza dinámicamente -->
+        <div id="header-container"></div>
+        
+        <!-- Sidebar se renderiza dinámicamente -->
+        <div id="sidebar-container"></div>
+        
+        <!-- Contenido principal -->
+        <main id="main-content">
+            <div id="view-container">
+                <!-- Mensaje inicial mientras carga -->
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <p>Cargando aplicación...</p>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Loading overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+    </div>
+    
+    <!-- Script de verificación de errores -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
+            const container = document.getElementById('view-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="card" style="max-width: 600px; margin: 2rem auto;">
+                        <div class="card__header">
+                            <h2 class="card__title">Error al cargar la aplicación</h2>
+                        </div>
+                        <div class="card__body">
+                            <p class="text-muted">${e.error ? e.error.message : 'Error desconocido'}</p>
+                            <button class="btn btn-primary" onclick="window.location.reload()" style="margin-top: var(--spacing-md);">
+                                Recargar página
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

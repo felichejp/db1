@@ -114,3 +114,4 @@ psql -U postgres -d peer_tutoring_db -f database_schema.sql
 3. El archivo `.env` debe estar en la misma carpeta que `server.ts`
 4. Después de modificar el `.env`, reinicia el servidor
 
+

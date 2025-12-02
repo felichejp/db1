@@ -9,26 +9,29 @@ import { validateForm } from '../utils/validators.js';
  */
 class LoginView {
   render() {
+    document.body.classList.add('auth-page');
     const container = document.getElementById('view-container');
+    container.className = 'auth-container';
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
-        <div class="card__header">
-          <h2 class="card__title">Iniciar Sesión</h2>
+      <div class="auth-card">
+        <div class="auth-welcome">
+          <h1 class="auth-welcome__title">¡Bienvenido!</h1>
+          <p class="auth-welcome__subtitle">Inicia sesión para continuar</p>
         </div>
-        <div class="card__body">
+        <div class="auth-form">
           <form id="login-form">
             <div class="form-group">
               <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" class="form-input" required>
+              <input type="email" id="email" class="form-input" placeholder="tu@email.com" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="password">Contraseña</label>
-              <input type="password" id="password" class="form-input" required>
+              <input type="password" id="password" class="form-input" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar Sesión</button>
+            <button type="submit" class="btn btn-primary auth-submit">Iniciar Sesión</button>
           </form>
-          <p class="text-center mt-2">
-            ¿No tienes cuenta? <a href="#/register">Regístrate aquí</a>
+          <p class="auth-footer">
+            ¿No tienes cuenta? <a href="#/register" class="auth-link">Regístrate aquí</a>
           </p>
         </div>
       </div>

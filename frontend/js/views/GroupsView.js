@@ -21,12 +21,6 @@ class GroupsView {
 
     container.innerHTML = `
       <div class="page-header">
-        <div>
-          <h1>Mis Grupos</h1>
-          <p class="text-muted">
-            Visualiza tu participación en grupos, su estado y disponibilidad de cupos.
-          </p>
-        </div>
         ${canCreateGroups ? '<button class="btn btn-primary" id="create-group-btn">Crear grupo</button>' : ''}
       </div>
       <div id="groups-sections" class="groups-page__sections">
@@ -91,7 +85,13 @@ class GroupsView {
       console.error(error);
       content.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state__icon">⚠️</div>
+          <div class="empty-state__icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
           <p class="empty-state__message">No se pudo cargar la información de grupos.</p>
         </div>
       `;
@@ -178,11 +178,11 @@ class GroupsView {
       const disabled = group.isFull || isInactive;
       actions = `
         <button
-          class="btn btn-secondary btn-sm js-request-access"
+          class="btn btn-primary btn-sm js-request-access"
           data-group-id="${group.id}"
           ${disabled ? 'disabled' : ''}
         >
-          ${group.isFull ? 'Sin cupo' : 'Solicitar ingreso'}
+          ${group.isFull ? 'Lleno' : 'Unirse'}
         </button>
       `;
     } else if (this.currentUser.role === 'Admin' || this.currentUser.role === 'Profesor') {
@@ -191,50 +191,69 @@ class GroupsView {
           class="btn btn-secondary btn-sm js-view-members"
           data-group-id="${group.id}"
         >
-          Ver miembros
+          Ver
         </button>
       `;
     } else {
-      actions = '<small class="text-muted">Acciones próximas</small>';
+      actions = `
+        <button
+          class="btn btn-secondary btn-sm"
+          onclick="window.location.hash='#/groups/${group.id}'"
+        >
+          Abrir
+        </button>
+      `;
     }
 
     return `
       <article class="group-card" data-group-id="${group.id}">
-        <div class="group-card__header">
-          <div>
-            <h3>${group.nombre}</h3>
-            <p class="text-muted">Responsable: ${group.profesorNombre || 'Sin asignar'}</p>
+        <div class="group-card__banner">
+          <div class="group-card__banner-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
           </div>
           <div class="group-card__status">
             <span class="group-status ${statusClass}">${getStatusName(group.estado)}</span>
+          </div>
+        </div>
+        <div class="group-card__content">
+          <h3 class="group-card__title">${group.nombre}</h3>
+          <p class="group-card__professor">${group.profesorNombre || 'Sin profesor asignado'}</p>
+          <div class="group-card__info">
+            <div class="group-card__info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>${group.memberCount}/${group.maxMembers}</span>
+            </div>
             ${
-              group.isFull
-                ? '<span class="group-status group-status--full">CUPO LLENO</span>'
+              availableSeats > 0
+                ? `<div class="group-card__info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>${availableSeats} cupos</span>
+                  </div>`
+                : group.isFull
+                ? `<div class="group-card__info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                    <span>Lleno</span>
+                  </div>`
                 : ''
             }
           </div>
         </div>
-        <p class="group-card__description">${group.descripcion || 'Sin descripción registrada.'}</p>
-        <div class="group-card__meta">
-          <div>
-            <small>Miembros</small>
-            <strong>${group.memberCount}/${group.maxMembers}</strong>
-          </div>
-          <div>
-            <small>Cupos disponibles</small>
-            <strong>${availableSeats}</strong>
-          </div>
-          <div>
-            <small>Estado</small>
-            <strong>${getStatusName(group.estado)}</strong>
-          </div>
-        </div>
-        ${
-          showMembersPreview
-            ? this.renderMembersPreview(group.members.slice(0, 3), group.memberCount)
-            : ''
-        }
-        <div class="group-card__actions">
+        <div class="group-card__footer">
           ${actions}
         </div>
       </article>

@@ -186,3 +186,43 @@ export async function getUserProfile(
   }
 }
 
+/**
+ * Buscar usuarios por nombre o email
+ */
+export async function searchUsers(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    const { q } = req.query;
+    const searchTerm = typeof q === 'string' ? q.trim() : '';
+
+    if (!searchTerm || searchTerm.length < 2) {
+      sendError(res, 'El término de búsqueda debe tener al menos 2 caracteres', 400);
+      return;
+    }
+
+    const currentUserId = typeof req.user.userId === 'number' 
+      ? req.user.userId 
+      : parseInt(String(req.user.userId), 10);
+
+    // Buscar usuarios que coincidan con el término (excluyendo al usuario actual)
+    const result = await query(
+      `SELECT id, email, nombre, role, grado
+       FROM users
+       WHERE id != $1
+       AND (LOWER(nombre) LIKE LOWER($2) OR LOWER(email) LIKE LOWER($2))
+       ORDER BY nombre ASC
+       LIMIT 20`,
+      [currentUserId, `%${searchTerm}%`]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en searchUsers:', error);
+    sendError(res, 'Error al buscar usuarios', 500);
+  }
+}
+

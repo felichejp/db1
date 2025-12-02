@@ -74,6 +74,9 @@ class Router {
       }
     }
 
+    // Limpiar clase auth-page si existe
+    document.body.classList.remove('auth-page');
+
     // Renderizar vista
     route.view.render();
 

@@ -5,6 +5,7 @@ import { validateId } from '../middleware/validate';
 
 const router = Router();
 
+router.get('/search', authenticateToken, userController.searchUsers);
 router.get('/', authenticateToken, authorizeRole('Admin', 'Profesor'), userController.getUsers);
 router.get('/:id', authenticateToken, validateId, userController.getUserById);
 router.put('/:id', authenticateToken, validateId, userController.updateUser);

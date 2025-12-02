@@ -3,6 +3,7 @@ import { groupsAPI } from '../api/groups.js';
 import { usersAPI } from '../api/users.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
+import { adminAPI } from '../api/admin.js';
 
 /**
  * Vista de Administración para Admin
@@ -27,6 +28,7 @@ class AdminView {
         <div class="admin-tabs__header">
           <button class="admin-tab-btn active" data-tab="create">Crear Grupo</button>
           <button class="admin-tab-btn" data-tab="manage">Gestionar Grupos</button>
+          <button class="admin-tab-btn" data-tab="metrics">Métricas</button>
         </div>
         <div class="admin-tabs__content">
           <div class="admin-tab-panel active" id="tab-create">
@@ -111,6 +113,18 @@ class AdminView {
             </div>
           </div>
         </div>
+        <div class="admin-tab-panel" id="tab-metrics">
+          <div class="card">
+            <div class="card__header">
+              <h1 class="card__title">Métricas</h1>
+            </div>
+            <div class="card__body">
+              <div id="metrics-content">
+                <div class="spinner"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     `;
@@ -119,6 +133,7 @@ class AdminView {
       Loading.show();
       await this.loadFormData();
       await this.loadManageGroups();
+      await this.loadMetrics();
       this.attachEventListeners();
       this.attachTabListeners();
     } catch (error) {
@@ -146,6 +161,129 @@ class AdminView {
         document.getElementById(`tab-${tabName}`).classList.add('active');
       });
     });
+  }
+
+  async loadMetrics() {
+    const content = document.getElementById('metrics-content');
+    if (!content) return;
+
+    try {
+      const [statsRes, groupsRes, reportsRes] = await Promise.allSettled([
+        adminAPI.getStats(),
+        adminAPI.getGroups(),
+        adminAPI.getReports()
+      ]);
+
+      const stats = statsRes.status === 'fulfilled' && statsRes.value.success ? statsRes.value.data : null;
+      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success ? groupsRes.value.data : [];
+      const reports = reportsRes.status === 'fulfilled' && reportsRes.value.success ? reportsRes.value.data : null;
+
+      const groupsListHTML = groups.length ? `
+        <div class="table-container mt-2">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Profesor</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groups.map(g => `
+                <tr>
+                  <td>${g.nombre}</td>
+                  <td>${g.profesorName || 'Sin asignar'}</td>
+                  <td>${g.estado || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : '<p class="text-muted">No hay grupos registrados.</p>';
+
+      const statsHTML = stats ? `
+        <div class="metrics-summary">
+          <div class="metrics-card">
+            <h3>Alumnos</h3>
+            <p>${stats.users}</p>
+          </div>
+          <div class="metrics-card">
+            <h3>Grupos</h3>
+            <p>${stats.groups}</p>
+          </div>
+          <div class="metrics-card">
+            <h3>Sesiones</h3>
+            <p>${stats.sessions}</p>
+          </div>
+          <div class="metrics-card">
+            <h3>Tutores</h3>
+            <p>${stats.tutors}</p>
+          </div>
+          <div class="metrics-card">
+            <h3>Sesiones activas</h3>
+            <p>${stats.activeSessions}</p>
+          </div>
+        </div>
+      ` : '<p class="text-muted">No se pudieron cargar las estadísticas generales.</p>';
+
+      const sessionsByMonth = reports?.sessionsByMonth || [];
+      const topTutors = reports?.topTutors || [];
+
+      const sessionsChartHTML = sessionsByMonth.length ? `
+        <div class="metrics-chart mt-3">
+          <h3>Sesiones impartidas por mes</h3>
+          <div class="metrics-chart__bars">
+            ${sessionsByMonth.map(row => `
+              <div class="metrics-bar">
+                <span class="metrics-bar__label">${new Date(row.month).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
+                <div class="metrics-bar__value" style="width: ${Math.min(100, row.count * 10)}%;">
+                  ${row.count}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '<p class="text-muted mt-3">No hay datos de sesiones completadas por mes.</p>';
+
+      const topTutorsHTML = topTutors.length ? `
+        <div class="metrics-top mt-3">
+          <h3>Tutores destacados</h3>
+          <div class="table-container mt-1">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Rating promedio</th>
+                  <th>Total sesiones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topTutors.map(t => `
+                  <tr>
+                    <td>${t.nombre}</td>
+                    <td>${t.email}</td>
+                    <td>${t.ratingPromedio || '-'}</td>
+                    <td>${t.totalSesiones || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : '<p class="text-muted mt-3">No hay información de tutores destacados.</p>';
+
+      content.innerHTML = `
+        ${statsHTML}
+        <h2 class="mt-3">Grupos existentes</h2>
+        ${groupsListHTML}
+        ${sessionsChartHTML}
+        ${topTutorsHTML}
+      `;
+    } catch (error) {
+      console.error('Error al cargar métricas:', error);
+      content.innerHTML = '<p class="text-muted">Error al cargar métricas</p>';
+    }
   }
 
   async loadManageGroups() {

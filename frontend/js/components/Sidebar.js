@@ -36,6 +36,7 @@ class Sidebar {
       ],
       Estudiante: [
         ...baseItems,
+        { path: '#/courses', label: 'Cursos disponibles', icon: '📘' },
         { path: '#/groups', label: 'Mis Grupos', icon: '👨‍👩‍👧‍👦' },
         { path: '#/sessions', label: 'Sesiones', icon: '📅' },
         { path: '#/profile', label: 'Mi Perfil', icon: '👤' }

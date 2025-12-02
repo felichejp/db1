@@ -3,6 +3,8 @@ import LoginView from './views/LoginView.js';
 import RegisterView from './views/RegisterView.js';
 import DashboardView from './views/DashboardView.js';
 import GroupsView from './views/GroupsView.js';
+import SessionsView from './views/SessionsView.js';
+import AvailableCoursesView from './views/AvailableCoursesView.js';
 import AdminView from './views/AdminView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
@@ -24,6 +26,8 @@ class Router {
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
     this.routes.set('#/groups', { view: GroupsView, protected: true });
+    this.routes.set('#/sessions', { view: SessionsView, protected: true });
+    this.routes.set('#/courses', { view: AvailableCoursesView, protected: true });
     this.routes.set('#/admin', { view: AdminView, protected: true });
 
     // Escuchar cambios de hash

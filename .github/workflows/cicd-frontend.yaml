@@ -13,27 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies (if needed)
-        working-directory: inicio/frontend
-        run: |
-          if [ -f "package.json" ]; then
-            npm install
-          fi
-
       - name: Prepare frontend files for deployment
         run: |
           # Create build directory and copy static files from frontend folder
           mkdir -p inicio/build-frontend
-          # Copy static files (exclude server.js and node_modules)
+          # Copy all static files (exclude server.js which is only for local dev)
           cp -r inicio/frontend/css inicio/build-frontend/
           cp -r inicio/frontend/js inicio/build-frontend/
           cp inicio/frontend/index.html inicio/build-frontend/
-          # Copy any other static files if they exist
+          # Copy package.json if it exists (not needed for S3 but harmless)
           if [ -f "inicio/frontend/package.json" ]; then
             cp inicio/frontend/package.json inicio/build-frontend/ 2>/dev/null || true
           fi

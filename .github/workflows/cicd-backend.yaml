@@ -212,6 +212,7 @@ jobs:
           echo "✅ Lambda function update completed"
 
       - name: Get Lambda function info
+        id: lambda-info
         run: |
           echo "Lambda function information:"
           aws lambda get-function \
@@ -220,15 +221,58 @@ jobs:
             --query 'Configuration.[FunctionName,LastModified,Runtime,CodeSize,MemorySize,Timeout,Handler]' \
             --output table
           
+          # Extract handler for validation
+          HANDLER=$(aws lambda get-function-configuration \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}" \
+            --query 'Handler' \
+            --output text)
+          
+          echo "handler=$HANDLER" >> $GITHUB_OUTPUT
+          echo ""
+          echo "Current handler: $HANDLER"
+
+      - name: Validate Lambda configuration
+        run: |
+          HANDLER="${{ steps.lambda-info.outputs.handler }}"
+          EXPECTED_HANDLER="lambda-handler.handler"
+          
+          echo "🔍 Validating Lambda configuration..."
+          echo "Expected handler: $EXPECTED_HANDLER"
+          echo "Current handler:  $HANDLER"
+          echo ""
+          
+          # Validate handler
+          if [ "$HANDLER" != "$EXPECTED_HANDLER" ]; then
+            echo "❌ ERROR: Handler configuration is incorrect!"
+            echo ""
+            echo "Current handler:  $HANDLER"
+            echo "Expected handler: $EXPECTED_HANDLER"
+            echo ""
+            echo "📝 To fix this:"
+            echo "1. Go to AWS Lambda Console"
+            echo "2. Select function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
+            echo "3. Go to: Configuration > Runtime settings"
+            echo "4. Click 'Edit'"
+            echo "5. Change Handler to: lambda-handler.handler"
+            echo "6. Click 'Save'"
+            echo ""
+            echo "⚠️  The deployment was successful, but the function may not work correctly"
+            echo "    until the handler is updated."
+            exit 1
+          else
+            echo "✅ Handler configuration is correct: $HANDLER"
+          fi
+          
           echo ""
           echo "✅ Deployment completed successfully"
           echo ""
-          echo "📝 Important: Make sure your Lambda function is configured with:"
-          echo "   - Handler: lambda-handler.handler"
-          echo "   - Runtime: Node.js 20.x (or compatible)"
-          echo "   - Environment variables: Set all required env vars (DB_HOST, JWT_SECRET, etc.)"
-          echo "   - VPC: Configure if database is in VPC"
-          echo "   - Timeout: At least 30 seconds (recommended: 60+ seconds)"
-          echo "   - Memory: At least 512 MB (recommended: 1024 MB)"
+          echo "📝 Lambda function configuration:"
+          echo "   ✅ Handler: $HANDLER"
+          echo "   📋 Runtime: Node.js 20.x (or compatible)"
+          echo "   ⚙️  Environment variables: Verify all required vars are set (DB_HOST, JWT_SECRET, etc.)"
+          echo "   🌐 VPC: Configure if database is in VPC"
+          echo "   ⏱️  Timeout: At least 30 seconds (recommended: 60+ seconds)"
+          echo "   💾 Memory: At least 512 MB (recommended: 1024 MB)"
           echo ""
           echo "⚠️  Note: Socket.IO will NOT work in Lambda. Only HTTP/API routes are available."

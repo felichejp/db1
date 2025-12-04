@@ -1,0 +1,217 @@
+name: Deploy Backend to Lambda
+
+on:
+  push:
+    tags:
+      - 'v-backend*'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Debug - List repository structure
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Repository contents:"
+          ls -la
+          echo "Checking for backend folder:"
+          if [ -d "inicio/backend" ]; then
+            echo "Found: inicio/backend"
+            ls -la inicio/backend/ | head -20
+          elif [ -d "backend" ]; then
+            echo "Found: backend (in root)"
+            ls -la backend/ | head -20
+          else
+            echo "Backend folder not found in expected locations"
+            find . -name "backend" -type d 2>/dev/null | head -5
+          fi
+
+      - name: Determine backend path
+        id: backend-path
+        run: |
+          if [ -d "inicio/backend" ]; then
+            echo "path=inicio/backend" >> $GITHUB_OUTPUT
+          elif [ -d "backend" ]; then
+            echo "path=backend" >> $GITHUB_OUTPUT
+          else
+            echo "Error: Backend directory not found"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          echo "Installing dependencies in: ${{ steps.backend-path.outputs.path }}"
+          npm ci --production=false
+
+      - name: Build TypeScript
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          echo "Building TypeScript..."
+          npm run build
+          echo "Build completed. Checking dist folder:"
+          ls -la dist/ | head -10
+
+      - name: Install production dependencies only
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          echo "Installing production dependencies..."
+          npm ci --production=true
+          echo "Production dependencies installed"
+
+      - name: Validate AWS secrets and set defaults
+        id: aws-config
+        run: |
+          # Validate required secrets
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "❌ Error: AWS_ACCESS_KEY_ID secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "❌ Error: AWS_SECRET_ACCESS_KEY secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.S3_BUCKET_NAME }}" ]; then
+            echo "❌ Error: S3_BUCKET_NAME secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          
+          # Set default region if not provided
+          if [ -z "${{ secrets.AWS_REGION }}" ]; then
+            echo "⚠️  Warning: AWS_REGION secret is not configured, using default: us-east-1"
+            echo "You can override this by setting AWS_REGION secret in: Settings > Secrets and variables > Actions"
+            echo "region=us-east-1" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Using AWS_REGION from secrets: ${{ secrets.AWS_REGION }}"
+            echo "region=${{ secrets.AWS_REGION }}" >> $GITHUB_OUTPUT
+          fi
+          
+          # Validate Lambda function name
+          if [ -z "${{ secrets.LAMBDA_FUNCTION_NAME }}" ]; then
+            echo "❌ Error: LAMBDA_FUNCTION_NAME secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            echo "Example value: peer-tutoring-backend"
+            exit 1
+          fi
+          
+          echo "✅ All required AWS secrets are configured"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ steps.aws-config.outputs.region }}
+
+      - name: Create deployment package
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          echo "Creating deployment package for Lambda..."
+          
+          # Verify lambda-handler exists
+          if [ ! -f "dist/lambda-handler.js" ]; then
+            echo "❌ Error: lambda-handler.js not found in dist/"
+            echo "Make sure lambda-handler.ts is compiled"
+            exit 1
+          fi
+          
+          # Create a clean package directory
+          mkdir -p lambda-package
+          
+          # Copy compiled JavaScript files
+          cp -r dist/* lambda-package/
+          
+          # Copy node_modules (production only)
+          cp -r node_modules lambda-package/
+          
+          # Copy package.json for Lambda runtime
+          cp package.json lambda-package/
+          
+          # Create zip file
+          cd lambda-package
+          zip -r ../lambda-deployment.zip . -q
+          cd ..
+          
+          echo "Package created. Size:"
+          ls -lh lambda-deployment.zip
+          
+          # Verify handler exists in package
+          echo "Verifying handler in package:"
+          unzip -l lambda-deployment.zip | grep lambda-handler || echo "⚠️  Warning: lambda-handler not found in zip"
+          
+          # Show package contents
+          echo "Package contents (first 20 files):"
+          unzip -l lambda-deployment.zip | head -20
+
+      - name: Upload package to S3 (for Lambda deployment)
+        run: |
+          PACKAGE_PATH="${{ steps.backend-path.outputs.path }}/lambda-deployment.zip"
+          S3_KEY="lambda-deployments/backend-$(date +%Y%m%d-%H%M%S).zip"
+          
+          echo "Uploading package to S3..."
+          echo "Bucket: ${{ secrets.S3_BUCKET_NAME }}"
+          echo "Key: $S3_KEY"
+          
+          aws s3 cp "$PACKAGE_PATH" \
+            "s3://${{ secrets.S3_BUCKET_NAME }}/$S3_KEY" \
+            --region "${{ steps.aws-config.outputs.region }}"
+          
+          echo "s3-key=$S3_KEY" >> $GITHUB_ENV
+          echo "✅ Package uploaded to S3"
+
+      - name: Update Lambda function code
+        run: |
+          echo "Updating Lambda function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
+          
+          # Update Lambda function code from S3
+          aws lambda update-function-code \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --s3-bucket "${{ secrets.S3_BUCKET_NAME }}" \
+            --s3-key "$S3_KEY" \
+            --region "${{ steps.aws-config.outputs.region }}"
+          
+          echo "✅ Lambda function code updated"
+
+      - name: Wait for Lambda update to complete
+        run: |
+          echo "Waiting for Lambda function update to complete..."
+          aws lambda wait function-updated \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}"
+          
+          echo "✅ Lambda function update completed"
+
+      - name: Get Lambda function info
+        run: |
+          echo "Lambda function information:"
+          aws lambda get-function \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}" \
+            --query 'Configuration.[FunctionName,LastModified,Runtime,CodeSize,MemorySize,Timeout,Handler]' \
+            --output table
+          
+          echo ""
+          echo "✅ Deployment completed successfully"
+          echo ""
+          echo "📝 Important: Make sure your Lambda function is configured with:"
+          echo "   - Handler: lambda-handler.handler"
+          echo "   - Runtime: Node.js 20.x (or compatible)"
+          echo "   - Environment variables: Set all required env vars (DB_HOST, JWT_SECRET, etc.)"
+          echo "   - VPC: Configure if database is in VPC"
+          echo "   - Timeout: At least 30 seconds (recommended: 60+ seconds)"
+          echo "   - Memory: At least 512 MB (recommended: 1024 MB)"
+          echo ""
+          echo "⚠️  Note: Socket.IO will NOT work in Lambda. Only HTTP/API routes are available."

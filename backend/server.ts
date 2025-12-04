@@ -58,18 +58,30 @@ app.use('/api/admin', adminRoutes);
 // Manejo de errores (debe ir al final)
 app.use(errorHandler);
 
-// Crear servidor HTTP
-const server = createServer(app);
+// Detectar si estamos en Lambda
+const isLambda = !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-// Inicializar Socket.IO
-initializeSocket(server);
+if (!isLambda) {
+  // Solo inicializar servidor HTTP y Socket.IO si NO estamos en Lambda
+  // Crear servidor HTTP
+  const server = createServer(app);
 
-// Iniciar servidor
-server.listen(PORT, () => {
-  logger.info(`Servidor corriendo en puerto ${PORT}`);
-  logger.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+  // Inicializar Socket.IO
+  initializeSocket(server);
+
+  // Iniciar servidor
+  server.listen(PORT, () => {
+    logger.info(`Servidor corriendo en puerto ${PORT}`);
+    logger.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`CORS origin: ${CORS_ORIGIN}`);
+  });
+} else {
+  // En Lambda, solo loguear que la app está lista
+  logger.info('Aplicación lista para Lambda');
+  logger.info(`Entorno: ${process.env.NODE_ENV || 'production'}`);
   logger.info(`CORS origin: ${CORS_ORIGIN}`);
-});
+  logger.warn('Socket.IO no está disponible en Lambda - solo rutas HTTP/API funcionarán');
+}
 
 // Manejo de errores no capturados
 process.on('unhandledRejection', (reason, promise) => {

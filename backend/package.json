@@ -27,7 +27,8 @@
     "cors": "^2.8.5",
     "@aws-sdk/client-s3": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "serverless-http": "^3.2.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

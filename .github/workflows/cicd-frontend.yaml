@@ -13,15 +13,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (if a frontend build is needed )
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies and build project
+      - name: Install dependencies (if needed)
+        working-directory: inicio/frontend
         run: |
-          npm install
-          npm run build
+          if [ -f "package.json" ]; then
+            npm install
+          fi
+
+      - name: Prepare frontend files for deployment
+        run: |
+          # Create build directory and copy static files from frontend folder
+          mkdir -p inicio/build-frontend
+          # Copy static files (exclude server.js and node_modules)
+          cp -r inicio/frontend/css inicio/build-frontend/
+          cp -r inicio/frontend/js inicio/build-frontend/
+          cp inicio/frontend/index.html inicio/build-frontend/
+          # Copy any other static files if they exist
+          if [ -f "inicio/frontend/package.json" ]; then
+            cp inicio/frontend/package.json inicio/build-frontend/ 2>/dev/null || true
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,7 +48,7 @@ jobs:
       - name: Deploy to S3 bucket
         uses: reggionick/s3-deploy@v4
         with:
-          folder: build # The directory containing your built static files (e.g., dist, public)
+          folder: inicio/build-frontend # The directory containing your static files
           bucket: ${{ secrets.S3_BUCKET_NAME }}
           bucket-region: ${{ secrets.AWS_REGION }}
           delete-removed: true # Removes files in S3 that are no longer in the local copy

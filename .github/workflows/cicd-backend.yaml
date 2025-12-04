@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Debug - List repository structure
         run: |
@@ -68,12 +68,36 @@ jobs:
       - name: Clean and install production dependencies only
         working-directory: ${{ steps.backend-path.outputs.path }}
         run: |
-          echo "Cleaning node_modules and installing production dependencies only..."
-          # Remove node_modules and package-lock.json to start fresh
+          echo "Installing production dependencies..."
+          echo "Cleaning node_modules..."
           rm -rf node_modules
-          # Install only production dependencies
+          
+          # Install production dependencies
+          # This will compile native modules for x86_64 (GitHub Actions default)
+          echo "Installing with npm..."
           npm install --production --no-save
-          echo "✅ Production dependencies installed"
+          
+          # Verify bcrypt installation immediately after install
+          echo "Verifying bcrypt installation..."
+          if [ -f "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node" ]; then
+            echo "✅ bcrypt native module compiled successfully"
+            file "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node"
+            ls -lh "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node"
+          else
+            echo "⚠️  bcrypt native module not found, attempting rebuild..."
+            npm rebuild bcrypt --production
+            if [ -f "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node" ]; then
+              echo "✅ bcrypt rebuilt successfully"
+            else
+              echo "❌ ERROR: Failed to compile bcrypt native module"
+              echo "Checking bcrypt directory structure:"
+              ls -la node_modules/bcrypt/ 2>/dev/null || echo "bcrypt directory not found"
+              find node_modules/bcrypt -type f -name "*.node" 2>/dev/null || echo "No .node files found"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ Production dependencies installed (x86_64)"
 
       - name: Validate AWS secrets and set defaults
         id: aws-config
@@ -122,6 +146,153 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ steps.aws-config.outputs.region }}
 
+      - name: Get Lambda architecture
+        id: lambda-arch
+        run: |
+          echo "Detecting Lambda function architecture..."
+          # Try to get architecture from existing function, default to x86_64
+          ARCH=$(aws lambda get-function-configuration \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}" \
+            --query 'Architectures[0]' \
+            --output text 2>/dev/null || echo "x86_64")
+          
+          # Default to x86_64 if not specified, function doesn't exist, or error
+          if [ -z "$ARCH" ] || [ "$ARCH" == "None" ] || [ "$ARCH" == "null" ]; then
+            ARCH="x86_64"
+            echo "⚠️  Lambda function not found or architecture not set, defaulting to x86_64"
+          fi
+          
+          echo "architecture=$ARCH" >> $GITHUB_OUTPUT
+          echo "✅ Detected Lambda architecture: $ARCH"
+          echo ""
+          echo "ℹ️  Note: If this is the first deployment, architecture defaults to x86_64"
+          echo "   You can change it in Lambda console: Configuration > General configuration > Edit > Architecture"
+
+      - name: Rebuild native modules for Lambda architecture
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          LAMBDA_ARCH="${{ steps.lambda-arch.outputs.architecture }}"
+          echo "Processing native modules for architecture: $LAMBDA_ARCH"
+          
+          # If Lambda is arm64, we need to rebuild native modules for arm64
+          if [ "$LAMBDA_ARCH" == "arm64" ]; then
+            echo "⚠️  Lambda is configured for arm64 architecture"
+            echo "Rebuilding native modules for arm64 using Docker..."
+            
+            # Check if Docker is available
+            if ! command -v docker &> /dev/null; then
+              echo "❌ Error: Docker is required for arm64 compilation but not available"
+              echo "   GitHub Actions runners should have Docker available"
+              exit 1
+            fi
+            
+            # Use Docker to compile native modules for arm64
+            # Using the official AWS Lambda Node.js 24 base image
+            docker run --rm \
+              -v "$PWD:/workspace" \
+              -w /workspace \
+              --platform linux/arm64 \
+              public.ecr.aws/lambda/nodejs:24 \
+              sh -c "npm rebuild --production" || {
+              echo "⚠️  Docker rebuild failed, trying alternative method..."
+              # Fallback: use npm with cross-compilation flags
+              npm_config_arch=arm64 npm rebuild --production || {
+                echo "❌ Error: Failed to rebuild native modules for arm64"
+                exit 1
+              }
+            }
+            
+            echo "✅ Native modules rebuilt for arm64"
+          else
+            echo "✅ Native modules compiled for x86_64 (default architecture)"
+            echo "   No rebuild needed - GitHub Actions runs on x86_64 Linux"
+          fi
+
+      - name: Verify native modules
+        working-directory: ${{ steps.backend-path.outputs.path }}
+        run: |
+          LAMBDA_ARCH="${{ steps.lambda-arch.outputs.architecture }}"
+          echo "Verifying native modules for architecture: $LAMBDA_ARCH"
+          echo ""
+          
+          # List of native modules to verify
+          declare -A NATIVE_MODULES=(
+            ["bcrypt"]="lib/binding/napi-v3/bcrypt_lib.node"
+          )
+          
+          ALL_OK=true
+          
+          for module in "${!NATIVE_MODULES[@]}"; do
+            module_path="${NATIVE_MODULES[$module]}"
+            full_path="node_modules/$module/$module_path"
+            
+            echo "Checking $module..."
+            if [ -f "$full_path" ]; then
+              echo "  ✅ $module: Found at $module_path"
+              
+              # Check file type
+              file_info=$(file "$full_path" 2>/dev/null || echo "unknown")
+              echo "  📋 File info: $file_info"
+              
+              # Verify architecture if arm64
+              if [ "$LAMBDA_ARCH" == "arm64" ]; then
+                if echo "$file_info" | grep -q "ARM\|aarch64"; then
+                  echo "  ✅ Architecture: ARM64 (correct)"
+                else
+                  echo "  ⚠️  Warning: Expected ARM64 but got: $file_info"
+                  echo "  This may cause runtime errors in Lambda"
+                fi
+              else
+                if echo "$file_info" | grep -q "x86-64\|x86_64\|Intel 80386"; then
+                  echo "  ✅ Architecture: x86_64 (correct)"
+                else
+                  echo "  ⚠️  Warning: Expected x86_64 but got: $file_info"
+                fi
+              fi
+            else
+              echo "  ❌ $module: NOT FOUND at $module_path"
+              echo "  Attempting to find alternative paths..."
+              
+              # Try to find the module in different locations
+              find_result=$(find "node_modules/$module" -name "*.node" 2>/dev/null | head -1)
+              if [ -n "$find_result" ]; then
+                echo "  ⚠️  Found at alternative path: $find_result"
+                file_info=$(file "$find_result" 2>/dev/null || echo "unknown")
+                echo "  📋 File info: $file_info"
+              else
+                echo "  ❌ No .node files found for $module"
+                ALL_OK=false
+              fi
+            fi
+            echo ""
+          done
+          
+          # Check for other potential native modules
+          echo "Scanning for other native modules..."
+          native_count=$(find node_modules -name "*.node" 2>/dev/null | wc -l)
+          echo "  Found $native_count native module(s) total"
+          
+          if [ "$native_count" -gt 0 ]; then
+            echo "  Native modules found:"
+            find node_modules -name "*.node" 2>/dev/null | head -10 | while read -r file; do
+              echo "    - $file"
+            done
+          fi
+          
+          echo ""
+          if [ "$ALL_OK" = true ]; then
+            echo "✅ All native modules verified successfully"
+          else
+            echo "❌ Some native modules failed verification"
+            echo "Attempting to rebuild all native modules..."
+            npm rebuild --production
+            if [ "$LAMBDA_ARCH" == "arm64" ]; then
+              echo "⚠️  Note: If rebuild fails, ensure Docker is available for arm64 compilation"
+            fi
+            exit 1
+          fi
+
       - name: Create deployment package
         working-directory: ${{ steps.backend-path.outputs.path }}
         run: |
@@ -134,20 +305,55 @@ jobs:
             exit 1
           fi
           
+          # Verify bcrypt exists before packaging
+          echo "Pre-package verification:"
+          if [ -f "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node" ]; then
+            echo "✅ bcrypt native module found before packaging"
+            ls -lh "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node"
+          else
+            echo "❌ ERROR: bcrypt native module NOT FOUND before packaging!"
+            echo "Searching for bcrypt files:"
+            find node_modules/bcrypt -type f -name "*.node" 2>/dev/null || echo "No .node files found"
+            exit 1
+          fi
+          
           # Create a clean package directory
+          rm -rf lambda-package
           mkdir -p lambda-package
           
           # Copy compiled JavaScript files
+          echo "Copying compiled files..."
           cp -r dist/* lambda-package/
           
-          # Copy node_modules (production only)
-          cp -r node_modules lambda-package/
+          # Copy node_modules with proper handling of symlinks and native modules
+          echo "Copying node_modules (this may take a while)..."
+          # Use rsync if available, otherwise use cp with proper flags
+          if command -v rsync &> /dev/null; then
+            rsync -av --copy-links node_modules/ lambda-package/node_modules/
+          else
+            # Use cp with -L to follow symlinks and -R for recursive
+            cp -RL node_modules lambda-package/
+          fi
+          
+          # Verify bcrypt was copied correctly
+          echo "Verifying bcrypt in package directory:"
+          if [ -f "lambda-package/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node" ]; then
+            echo "✅ bcrypt native module copied successfully"
+            ls -lh "lambda-package/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node"
+          else
+            echo "❌ ERROR: bcrypt native module NOT FOUND in package directory!"
+            echo "Searching in package:"
+            find lambda-package/node_modules/bcrypt -type f -name "*.node" 2>/dev/null || echo "No .node files found"
+            exit 1
+          fi
           
           # Copy package.json for Lambda runtime
           cp package.json lambda-package/
           
-          # Create zip file
+          # Create zip file with all files (including hidden files)
+          echo "Creating ZIP package..."
           cd lambda-package
+          # Use zip with -r for recursive and ensure all files are included
           zip -r ../lambda-deployment.zip . -q
           cd ..
           
@@ -156,11 +362,39 @@ jobs:
           
           # Verify handler exists in package
           echo "Verifying handler in package:"
-          unzip -l lambda-deployment.zip | grep lambda-handler || echo "⚠️  Warning: lambda-handler not found in zip"
+          if unzip -l lambda-deployment.zip | grep -q "lambda-handler.js"; then
+            echo "✅ lambda-handler.js found in ZIP"
+          else
+            echo "❌ ERROR: lambda-handler.js NOT FOUND in ZIP"
+            exit 1
+          fi
           
-          # Show package contents
-          echo "Package contents (first 20 files):"
-          unzip -l lambda-deployment.zip | head -20
+          # Verify bcrypt native module is included in ZIP
+          echo "Verifying bcrypt native module in ZIP:"
+          if unzip -l lambda-deployment.zip | grep -q "bcrypt.*\.node"; then
+            echo "✅ bcrypt native module found in ZIP"
+            # Show the exact path
+            unzip -l lambda-deployment.zip | grep "bcrypt.*\.node" | head -3
+          else
+            echo "❌ ERROR: bcrypt native module NOT FOUND in ZIP!"
+            echo "This will cause runtime errors in Lambda"
+            echo "Searching for any bcrypt files in ZIP:"
+            unzip -l lambda-deployment.zip | grep bcrypt | head -10
+            exit 1
+          fi
+          
+          # Verify all native modules are included
+          echo "Verifying all native modules in ZIP:"
+          native_in_zip=$(unzip -l lambda-deployment.zip | grep "\.node$" | wc -l)
+          echo "  Found $native_in_zip native module(s) in ZIP"
+          if [ "$native_in_zip" -gt 0 ]; then
+            echo "  Native modules in ZIP:"
+            unzip -l lambda-deployment.zip | grep "\.node$" | head -10
+          fi
+          
+          # Show package contents (first 30 files)
+          echo "Package contents (first 30 files):"
+          unzip -l lambda-deployment.zip | head -30
 
       - name: Upload package to S3 (for Lambda deployment)
         id: upload-s3
@@ -228,9 +462,30 @@ jobs:
             --query 'Handler' \
             --output text)
           
+          # Extract runtime for validation
+          RUNTIME=$(aws lambda get-function-configuration \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}" \
+            --query 'Runtime' \
+            --output text)
+          
           echo "handler=$HANDLER" >> $GITHUB_OUTPUT
+          echo "runtime=$RUNTIME" >> $GITHUB_OUTPUT
           echo ""
           echo "Current handler: $HANDLER"
+          echo "Current runtime: $RUNTIME"
+          
+          # Warn if runtime doesn't match Node.js 24
+          if [[ ! "$RUNTIME" =~ nodejs24 ]]; then
+            echo ""
+            echo "⚠️  WARNING: Lambda runtime is $RUNTIME, but we compiled with Node.js 24"
+            echo "   Native modules (like bcrypt) may have compatibility issues"
+            echo "   Recommended: Set Lambda runtime to nodejs24.x"
+            echo "   Location: Lambda Console > Configuration > Runtime settings > Edit"
+          else
+            echo ""
+            echo "✅ Lambda runtime matches compilation environment: $RUNTIME"
+          fi
 
       - name: Validate Lambda configuration
         run: |
@@ -269,7 +524,7 @@ jobs:
           echo ""
           echo "📝 Lambda function configuration:"
           echo "   ✅ Handler: $HANDLER"
-          echo "   📋 Runtime: Node.js 20.x (or compatible)"
+          echo "   📋 Runtime: Node.js 24.x (compiled with Node.js 24)"
           echo "   ⚙️  Environment variables: Verify all required vars are set (DB_HOST, JWT_SECRET, etc.)"
           echo "   🌐 VPC: Configure if database is in VPC"
           echo "   ⏱️  Timeout: At least 30 seconds (recommended: 60+ seconds)"

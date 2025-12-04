@@ -1,9 +1,10 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 10;
 
 /**
- * Hashea una contraseña usando bcrypt
+ * Hashea una contraseña usando bcryptjs
+ * bcryptjs es una implementación en JavaScript puro, compatible con Lambda
  */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);

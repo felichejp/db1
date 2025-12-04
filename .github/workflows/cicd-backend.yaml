@@ -163,6 +163,7 @@ jobs:
           unzip -l lambda-deployment.zip | head -20
 
       - name: Upload package to S3 (for Lambda deployment)
+        id: upload-s3
         run: |
           PACKAGE_PATH="${{ steps.backend-path.outputs.path }}/lambda-deployment.zip"
           S3_KEY="lambda-deployments/backend-$(date +%Y%m%d-%H%M%S).zip"
@@ -175,12 +176,22 @@ jobs:
             "s3://${{ secrets.S3_BUCKET_NAME }}/$S3_KEY" \
             --region "${{ steps.aws-config.outputs.region }}"
           
+          # Set both as output and environment variable for compatibility
+          echo "s3-key=$S3_KEY" >> $GITHUB_OUTPUT
           echo "s3-key=$S3_KEY" >> $GITHUB_ENV
           echo "✅ Package uploaded to S3"
 
       - name: Update Lambda function code
         run: |
+          S3_KEY="${{ steps.upload-s3.outputs.s3-key }}"
+          
+          if [ -z "$S3_KEY" ]; then
+            echo "❌ Error: S3_KEY is empty. Cannot update Lambda function."
+            exit 1
+          fi
+          
           echo "Updating Lambda function: ${{ secrets.LAMBDA_FUNCTION_NAME }}"
+          echo "Using S3 key: $S3_KEY"
           
           # Update Lambda function code from S3
           aws lambda update-function-code \

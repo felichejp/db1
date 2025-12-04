@@ -83,12 +83,44 @@ jobs:
           echo "Build directory contents:"
           ls -la "$BUILD_DIR"
 
+      - name: Validate AWS secrets and set defaults
+        id: aws-config
+        run: |
+          # Validate required secrets
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "❌ Error: AWS_ACCESS_KEY_ID secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "❌ Error: AWS_SECRET_ACCESS_KEY secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.S3_BUCKET_NAME }}" ]; then
+            echo "❌ Error: S3_BUCKET_NAME secret is not configured"
+            echo "Please add it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          
+          # Set default region if not provided
+          if [ -z "${{ secrets.AWS_REGION }}" ]; then
+            echo "⚠️  Warning: AWS_REGION secret is not configured, using default: us-east-1"
+            echo "You can override this by setting AWS_REGION secret in: Settings > Secrets and variables > Actions"
+            echo "region=us-east-1" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Using AWS_REGION from secrets: ${{ secrets.AWS_REGION }}"
+            echo "region=${{ secrets.AWS_REGION }}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "✅ All required AWS secrets are configured"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ steps.aws-config.outputs.region }}
 
       - name: Determine build directory path
         id: build-dir
@@ -107,6 +139,6 @@ jobs:
         with:
           folder: ${{ steps.build-dir.outputs.path }} # The directory containing your static files
           bucket: ${{ secrets.S3_BUCKET_NAME }}
-          bucket-region: ${{ secrets.AWS_REGION }}
+          bucket-region: ${{ steps.aws-config.outputs.region }}
           delete-removed: true # Removes files in S3 that are no longer in the local copy
           no-cache: true

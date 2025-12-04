@@ -135,10 +135,17 @@ jobs:
           fi
 
       - name: Deploy to S3 bucket
-        uses: reggionick/s3-deploy@v4
-        with:
-          folder: ${{ steps.build-dir.outputs.path }} # The directory containing your static files
-          bucket: ${{ secrets.S3_BUCKET_NAME }}
-          bucket-region: ${{ steps.aws-config.outputs.region }}
-          delete-removed: true # Removes files in S3 that are no longer in the local copy
-          no-cache: true
+        run: |
+          echo "Deploying from: ${{ steps.build-dir.outputs.path }}"
+          echo "To bucket: ${{ secrets.S3_BUCKET_NAME }}"
+          echo "Region: ${{ steps.aws-config.outputs.region }}"
+          
+          # Sync files to S3 without ACLs (using bucket policies instead)
+          aws s3 sync "${{ steps.build-dir.outputs.path }}" \
+            "s3://${{ secrets.S3_BUCKET_NAME }}" \
+            --region "${{ steps.aws-config.outputs.region }}" \
+            --delete \
+            --no-progress \
+            --exact-timestamps
+          
+          echo "✅ Deployment completed successfully"

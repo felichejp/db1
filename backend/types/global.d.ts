@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-export type UserRole = 'Admin' | 'Profesor' | 'Tutor' | 'Estudiante';
+export type UserRole = 'Admin' | 'Profesor' | 'Tutor' | 'Estudiante' | 'Director';
 
 export interface ApiSuccess<T = unknown> {
   success: true;

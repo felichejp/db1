@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 
-export async function getStats(req: Request, res: Response): Promise<void> {
+export async function getStats(_req: Request, res: Response): Promise<void> {
   try {
     const [users, groups, sessions, tutors] = await Promise.all([
       query('SELECT COUNT(*) as count FROM users'),
@@ -28,7 +28,7 @@ export async function getStats(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function getAdminUsers(req: Request, res: Response): Promise<void> {
+export async function getAdminUsers(_req: Request, res: Response): Promise<void> {
   try {
     const result = await query(
       'SELECT id, email, nombre, role, grado, "createdAt" FROM users ORDER BY "createdAt" DESC'
@@ -40,7 +40,7 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
   }
 }
 
-export async function getAdminGroups(req: Request, res: Response): Promise<void> {
+export async function getAdminGroups(_req: Request, res: Response): Promise<void> {
   try {
     const result = await query(
       `SELECT g.*, u.nombre as "profesorName"
@@ -55,7 +55,7 @@ export async function getAdminGroups(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function getAdminReports(req: Request, res: Response): Promise<void> {
+export async function getAdminReports(_req: Request, res: Response): Promise<void> {
   try {
     // Reportes básicos
     const topTutors = await query(
@@ -85,7 +85,7 @@ export async function getAdminReports(req: Request, res: Response): Promise<void
   }
 }
 
-export async function getBadges(req: Request, res: Response): Promise<void> {
+export async function getBadges(_req: Request, res: Response): Promise<void> {
   try {
     const result = await query('SELECT * FROM badges ORDER BY "createdAt" DESC');
     sendSuccess(res, result.rows);

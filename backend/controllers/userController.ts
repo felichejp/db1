@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
-import { NotFoundError, AuthorizationError } from '../middleware/errorHandler';
+// import { NotFoundError, AuthorizationError } from '../middleware/errorHandler';
 import { query } from '../config/database';
 
 /**
  * Listar usuarios (Admin, Profesor)
  */
-export async function getUsers(req: Request, res: Response): Promise<void> {
+export async function getUsers(_req: Request, res: Response): Promise<void> {
   try {
     // TODO: Implementar paginación y filtros
     const result = await query(

@@ -13,7 +13,7 @@ export function sendSuccess<T>(
   const response: ApiSuccess<T> = {
     success: true,
     data,
-    ...(message && { message })
+    ...(message ? { message } : {})
   };
   res.status(statusCode).json(response);
 }
@@ -31,7 +31,7 @@ export function sendError(
     success: false,
     code,
     message,
-    ...(details && { details })
+    ...(details ? { details } : {})
   };
   res.status(code).json(response);
 }

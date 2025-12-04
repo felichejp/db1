@@ -1,4 +1,4 @@
-import { body, param, query, ValidationChain } from 'express-validator';
+import { body, param } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import { sendError } from '../utils/response';

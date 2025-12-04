@@ -65,7 +65,7 @@ export async function createSession(req: Request, res: Response): Promise<void> 
       `SELECT "userId" FROM group_members WHERE "groupId" = $1`,
       [groupId]
     );
-    const memberIds = membersResult.rows.map(row => row.userId);
+    const memberIds = membersResult.rows.map((row: { userId: number }) => row.userId);
 
     // Crear notificaciones para todos los miembros del grupo
     if (memberIds.length > 0) {

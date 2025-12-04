@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as fileController from '../controllers/fileController';
 import { authenticateToken } from '../middleware/auth';
-import { validateId, validateFile, validateGroupId } from '../middleware/validate';
+import { validateId, validateGroupId } from '../middleware/validate';
 import { validateFile as validateFileMiddleware } from '../middleware/upload';
 
 const router = Router();

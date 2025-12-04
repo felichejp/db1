@@ -65,7 +65,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   logger.error('Error en la aplicación', {
     error: err.message,

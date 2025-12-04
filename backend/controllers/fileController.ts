@@ -28,8 +28,8 @@ export async function uploadFile(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const { groupId, nombre, tipo, tamaño, descripcion } = req.body;
-    const file = req.file || (req as any).files?.[0];
+    const { groupId, nombre, tipo, descripcion } = req.body;
+    const file = (req as any).file || (req as any).files?.[0];
 
     if (!file) {
       sendError(res, 'No se proporcionó archivo', 400);

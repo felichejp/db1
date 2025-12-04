@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 import { sendSuccess, sendError } from '../utils/response';
-import { NotFoundError, DatabaseError } from '../middleware/errorHandler';
+// import { NotFoundError, DatabaseError } from '../middleware/errorHandler';
 import { query } from '../config/database';
 
 /**

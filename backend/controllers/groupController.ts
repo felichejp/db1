@@ -434,12 +434,13 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Agregar miembro
-    await addGroupMember(
-      { params: { id: invitation.groupId }, body: { userId: req.user.userId } } as Request,
-      res,
-      () => {}
-    );
+    // Agregar miembro directamente usando la función interna
+    // Crear un objeto Request compatible
+    const addMemberReq = Object.assign({}, req, {
+      params: { id: String(invitation.groupId) },
+      body: { userId: req.user.userId }
+    }) as Request;
+    await addGroupMember(addMemberReq, res);
 
     // Actualizar invitación
     await query(

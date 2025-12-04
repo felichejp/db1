@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { emitToGroup } from '../config/socket';
+import logger from '../utils/logger';
 
 export async function getGroupMessages(req: Request, res: Response): Promise<void> {
   try {
@@ -16,33 +17,33 @@ export async function getGroupMessages(req: Request, res: Response): Promise<voi
     );
     sendSuccess(res, result.rows);
   } catch (error) {
-    console.error('Error en getGroupMessages:', error);
+    logger.error('Error en getGroupMessages', { error, groupId: req.params.groupId });
     sendError(res, 'Error al obtener mensajes', 500);
   }
 }
 
 export async function createMessage(req: Request, res: Response): Promise<void> {
   try {
-    console.log('createMessage - Inicio', { body: req.body, user: req.user });
+    logger.debug('createMessage - Inicio', { body: req.body, user: req.user });
     
     if (!req.user) {
-      console.log('createMessage - No autenticado');
+      logger.warn('createMessage - No autenticado');
       sendError(res, 'No autenticado', 401);
       return;
     }
 
     const { groupId, content, tipo } = req.body;
-    console.log('createMessage - Datos recibidos', { groupId, content: content?.substring(0, 50), tipo, userId: req.user.userId, role: req.user.role });
+    logger.debug('createMessage - Datos recibidos', { groupId, content: content?.substring(0, 50), tipo, userId: req.user.userId, role: req.user.role });
 
     // Validaciones
     if (!groupId) {
-      console.log('createMessage - groupId faltante');
+      logger.warn('createMessage - groupId faltante');
       sendError(res, 'groupId es requerido', 400);
       return;
     }
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      console.log('createMessage - contenido inválido');
+      logger.warn('createMessage - contenido inválido');
       sendError(res, 'El contenido del mensaje es requerido', 400);
       return;
     }
@@ -52,26 +53,26 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     const groupIdNum = typeof groupId === 'number' ? groupId : parseInt(String(groupId), 10);
     
     if (isNaN(userId) || isNaN(groupIdNum)) {
-      console.error('createMessage - Error en conversión de tipos', { userId, groupIdNum, originalUserId: req.user.userId, originalGroupId: groupId });
+      logger.error('createMessage - Error en conversión de tipos', { userId, groupIdNum, originalUserId: req.user.userId, originalGroupId: groupId });
       sendError(res, 'Error en los parámetros: userId o groupId inválidos', 400);
       return;
     }
 
-    console.log('createMessage - Tipos normalizados', { userId, groupIdNum });
+    logger.debug('createMessage - Tipos normalizados', { userId, groupIdNum });
 
     // Verificar que el grupo existe
-    console.log('createMessage - Verificando grupo...');
+    logger.debug('createMessage - Verificando grupo...');
     const groupCheck = await query('SELECT id FROM groups WHERE id = $1', [groupIdNum]);
     if (groupCheck.rows.length === 0) {
-      console.log('createMessage - Grupo no encontrado', { groupIdNum });
+      logger.warn('createMessage - Grupo no encontrado', { groupIdNum });
       sendError(res, 'Grupo no encontrado', 404);
       return;
     }
-    console.log('createMessage - Grupo encontrado');
+    logger.debug('createMessage - Grupo encontrado');
 
     // Verificar que el usuario tiene acceso al grupo (es miembro, profesor, tutor asignado, o Admin)
     if (req.user.role !== 'Admin') {
-      console.log('createMessage - Verificando acceso (no Admin)...');
+      logger.debug('createMessage - Verificando acceso (no Admin)...');
       const membershipCheck = await query(
         `SELECT 1 FROM group_members WHERE "groupId" = $1 AND "userId" = $2`,
         [groupIdNum, userId]
@@ -93,7 +94,7 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
         professorCheck.rows.length > 0 || 
         tutorCheck.rows.length > 0;
 
-      console.log('createMessage - Resultados de acceso', {
+      logger.debug('createMessage - Resultados de acceso', {
         esMiembro: membershipCheck.rows.length > 0,
         esProfesor: professorCheck.rows.length > 0,
         esTutor: tutorCheck.rows.length > 0,
@@ -101,16 +102,16 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
       });
 
       if (!hasAccess) {
-        console.log('createMessage - Sin acceso al grupo');
+        logger.warn('createMessage - Sin acceso al grupo', { userId, groupIdNum });
         sendError(res, 'No tienes acceso a este grupo', 403);
         return;
       }
     } else {
-      console.log('createMessage - Admin, saltando verificación de acceso');
+      logger.debug('createMessage - Admin, saltando verificación de acceso');
     }
 
     // Insertar mensaje
-    console.log('createMessage - Insertando mensaje...', { userId, groupIdNum, content: content.substring(0, 30), tipo: tipo || 'texto' });
+    logger.debug('createMessage - Insertando mensaje...', { userId, groupIdNum, content: content.substring(0, 30), tipo: tipo || 'texto' });
     const result = await query(
       `INSERT INTO messages ("senderId", "groupId", content, tipo)
        VALUES ($1, $2, $3, $4)
@@ -119,10 +120,10 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     );
 
     const newMessage = result.rows[0];
-    console.log('createMessage - Mensaje insertado', { messageId: newMessage.id });
+    logger.info('createMessage - Mensaje insertado', { messageId: newMessage.id, userId, groupIdNum });
 
     // Obtener información del remitente para incluir en el evento
-    console.log('createMessage - Obteniendo información del remitente...');
+    logger.debug('createMessage - Obteniendo información del remitente...');
     const senderResult = await query(
       `SELECT id, nombre, email FROM users WHERE id = $1`,
       [userId]
@@ -131,29 +132,20 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     if (senderResult.rows.length > 0) {
       newMessage.senderName = senderResult.rows[0].nombre;
       newMessage.senderEmail = senderResult.rows[0].email;
-      console.log('createMessage - Información del remitente obtenida', { senderName: newMessage.senderName });
+      logger.debug('createMessage - Información del remitente obtenida', { senderName: newMessage.senderName });
     } else {
-      console.warn('createMessage - Remitente no encontrado en users', { userId });
+      logger.warn('createMessage - Remitente no encontrado en users', { userId });
     }
 
     // Emitir evento por Socket.IO
-    console.log('createMessage - Emitiendo evento Socket.IO...');
+    logger.debug('createMessage - Emitiendo evento Socket.IO...');
     emitToGroup(groupIdNum, 'new_message', newMessage);
-    console.log('createMessage - Evento emitido');
+    logger.debug('createMessage - Evento emitido');
 
-    console.log('createMessage - Éxito');
+    logger.info('createMessage - Éxito', { messageId: newMessage.id });
     sendSuccess(res, newMessage, 'Mensaje enviado', 201);
   } catch (error) {
-    console.error('Error en createMessage:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-    } else {
-      console.error('Error desconocido:', error);
-    }
+    logger.error('Error en createMessage', { error, userId: req.user?.userId, groupId: req.body?.groupId });
     sendError(res, 'Error al enviar mensaje', 500);
   }
 }
@@ -188,7 +180,7 @@ export async function deleteMessage(req: Request, res: Response): Promise<void> 
     
     sendSuccess(res, null, 'Mensaje eliminado');
   } catch (error) {
-    console.error('Error en deleteMessage:', error);
+    logger.error('Error en deleteMessage', { error, messageId: req.params.id, userId: req.user?.userId });
     sendError(res, 'Error al eliminar mensaje', 500);
   }
 }

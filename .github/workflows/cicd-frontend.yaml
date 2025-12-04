@@ -13,18 +13,75 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug - List repository structure
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Repository contents:"
+          ls -la
+          echo "Checking for frontend folder:"
+          if [ -d "inicio/frontend" ]; then
+            echo "Found: inicio/frontend"
+            ls -la inicio/frontend/
+          elif [ -d "frontend" ]; then
+            echo "Found: frontend (in root)"
+            ls -la frontend/
+          else
+            echo "Frontend folder not found in expected locations"
+            find . -name "frontend" -type d 2>/dev/null | head -5
+          fi
+
       - name: Prepare frontend files for deployment
         run: |
-          # Create build directory and copy static files from frontend folder
-          mkdir -p inicio/build-frontend
-          # Copy all static files (exclude server.js which is only for local dev)
-          cp -r inicio/frontend/css inicio/build-frontend/
-          cp -r inicio/frontend/js inicio/build-frontend/
-          cp inicio/frontend/index.html inicio/build-frontend/
-          # Copy package.json if it exists (not needed for S3 but harmless)
-          if [ -f "inicio/frontend/package.json" ]; then
-            cp inicio/frontend/package.json inicio/build-frontend/ 2>/dev/null || true
+          # Determine frontend path
+          if [ -d "inicio/frontend" ]; then
+            FRONTEND_DIR="inicio/frontend"
+            BUILD_DIR="inicio/build-frontend"
+          elif [ -d "frontend" ]; then
+            FRONTEND_DIR="frontend"
+            BUILD_DIR="build-frontend"
+          else
+            echo "Error: Frontend directory not found"
+            exit 1
           fi
+          
+          echo "Using frontend directory: $FRONTEND_DIR"
+          echo "Build directory: $BUILD_DIR"
+          
+          # Create build directory
+          mkdir -p "$BUILD_DIR"
+          
+          # Copy static files (verify they exist first)
+          if [ -d "$FRONTEND_DIR/css" ]; then
+            cp -r "$FRONTEND_DIR/css" "$BUILD_DIR/"
+            echo "✓ Copied css/"
+          else
+            echo "Warning: css/ directory not found"
+          fi
+          
+          if [ -d "$FRONTEND_DIR/js" ]; then
+            cp -r "$FRONTEND_DIR/js" "$BUILD_DIR/"
+            echo "✓ Copied js/"
+          else
+            echo "Warning: js/ directory not found"
+          fi
+          
+          if [ -f "$FRONTEND_DIR/index.html" ]; then
+            cp "$FRONTEND_DIR/index.html" "$BUILD_DIR/"
+            echo "✓ Copied index.html"
+          else
+            echo "Error: index.html not found"
+            exit 1
+          fi
+          
+          # Copy package.json if it exists
+          if [ -f "$FRONTEND_DIR/package.json" ]; then
+            cp "$FRONTEND_DIR/package.json" "$BUILD_DIR/" 2>/dev/null || true
+            echo "✓ Copied package.json"
+          fi
+          
+          echo "Build directory contents:"
+          ls -la "$BUILD_DIR"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,10 +90,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Determine build directory path
+        id: build-dir
+        run: |
+          if [ -d "inicio/build-frontend" ]; then
+            echo "path=inicio/build-frontend" >> $GITHUB_OUTPUT
+          elif [ -d "build-frontend" ]; then
+            echo "path=build-frontend" >> $GITHUB_OUTPUT
+          else
+            echo "Error: Build directory not found"
+            exit 1
+          fi
+
       - name: Deploy to S3 bucket
         uses: reggionick/s3-deploy@v4
         with:
-          folder: inicio/build-frontend # The directory containing your static files
+          folder: ${{ steps.build-dir.outputs.path }} # The directory containing your static files
           bucket: ${{ secrets.S3_BUCKET_NAME }}
           bucket-region: ${{ secrets.AWS_REGION }}
           delete-removed: true # Removes files in S3 that are no longer in the local copy

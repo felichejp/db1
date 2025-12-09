@@ -1,0 +1,822 @@
+Eres un programador experto full stack
+estoy desarrollando un sistema de asesorìas entre pares de alumnos
+
+A continuación se muestran los módulos/carateísticas del sistema
+
+Gestión de usuarios y roles
+- Autenticación y autorización (login logout)
+- Roles Administrador, Profesor, Tutor (alumno asesor) Estudiante (alumno que recibe ayuda)
+- Perfil de usuario (grado, materias, calificaciones)
+
+Sistema de grupos
+- Creación y gestión de grupos. minimo 1, máximo 5 estudiantes
+- Asignación de profesor responsable de cada grupo
+- invitaciones a grupo
+- Estado del grupo (activo, inactivo, completado)
+
+Sistema de asignación/emparejamiento con algoritmo para emparejar tutores con grupos:
+- grado del tutor (mismo o superior)
+- Materias de especialidad
+- Disponibilidad
+- Historial de desempeño
+- Faltan criterios de peso, priorización, empates, etc.
+
+Calendario y programación
+- Sistema de citas/sesiones de asesoría
+- Disponibilidad de tutores
+- Notificaciones de sesiones programadas
+- Recordatorios automáticos
+
+Comunicación
+- Mensajería entre tutores y grupos
+- Foros o chat dentro de cada grupo
+- Notificaciones (email o in-app websocket Socket.IO, WA)
+
+Seguimiento y evaluación
+- Registro de sesiones realizadas
+- Evaluación de asesorías (por estudiantes y profesores)
+- Reportes de progreso
+- Métricas de desempeño de tutores
+
+Gestión de contenido (almacenados en S3, tamaño máximo de 10 Megas)
+- Materiales de estudio compartidos
+- Recursos educativos
+- Archivos y documentos
+
+Panel de administración
+- Dashboard con estadísticas
+- Gestión de usuarios
+- Configuración del sistema
+- Reportes y analytics
+
+funciones adicionales
+- Sistema de badges/recompensas para tutores
+- Historial de asesorías
+- Búsqueda y filtros avanzados
+- Exportación de reportes
+- Sistema de calificaciones/ratings
+
+
+1.- FrontEnd
+
+Tecnologías:
+- Lenguaje: JavaScript (ES6+)
+- HTML5
+- CSS3
+- No se utiliza ningún framework (vanilla JavaScript)
+- Arquitectura: SPA (Single Page Application)
+- Tema: Oscuro (dark theme)
+
+Bibliotecas:
+- axios: Para peticiones HTTP al backend
+- socket.io-client: Para conexión WebSocket con el backend (notificaciones en tiempo real)
+
+Estructura de carpetas:
+```
+frontend/
+├── index.html
+├── css/
+│   ├── main.css
+│   ├── theme.css (variables de tema oscuro)
+│   └── components.css
+├── js/
+│   ├── main.js (punto de entrada)
+│   ├── router.js (sistema de routing)
+│   ├── api/
+│   │   ├── auth.js (endpoints de autenticación)
+│   │   ├── groups.js
+│   │   ├── sessions.js
+│   │   ├── tutors.js
+│   │   ├── messages.js
+│   │   └── files.js
+│   ├── services/
+│   │   ├── authService.js (gestión de autenticación)
+│   │   ├── socketService.js (gestión de WebSocket)
+│   │   └── storageService.js (localStorage/sessionStorage)
+│   ├── utils/
+│   │   ├── helpers.js (funciones auxiliares)
+│   │   └── validators.js (validaciones de formularios)
+│   ├── components/
+│   │   ├── Header.js
+│   │   ├── Sidebar.js
+│   │   ├── Modal.js
+│   │   ├── Notification.js
+│   │   └── Loading.js
+│   └── views/
+│       ├── LoginView.js
+│       ├── RegisterView.js
+│       ├── DashboardView.js
+│       ├── GroupsView.js
+│       ├── GroupDetailView.js
+│       ├── SessionsView.js
+│       ├── ProfileView.js
+│       ├── AdminView.js
+│       └── NotFoundView.js
+└── assets/
+    └── (imágenes, iconos, etc.)
+```
+
+Sistema de Routing (sin framework):
+- Implementación: Hash-based routing (#/login, #/dashboard, etc.)
+- Router principal en router.js
+- Manejo de rutas protegidas (requieren autenticación)
+- Redirección automática si no está autenticado
+- Rutas principales:
+  * #/login - Página de login
+  * #/register - Página de registro
+  * #/dashboard - Dashboard principal (según rol)
+  * #/groups - Lista de grupos
+  * #/groups/:id - Detalle de grupo
+  * #/sessions - Sesiones/calendario
+  * #/profile - Perfil de usuario
+  * #/admin - Panel de administración (solo Admin)
+  * #/tutors - Gestión de tutores (solo Admin/Profesor)
+
+Manejo de Estado:
+- Almacenamiento: localStorage para token JWT y datos persistentes
+- sessionStorage para datos temporales de sesión
+- Objeto global stateManager para estado de la aplicación:
+  * currentUser: Usuario autenticado actual
+  * currentView: Vista actual
+  * notifications: Array de notificaciones
+  * socket: Instancia de Socket.IO
+- Patrón: Singleton para servicios compartidos
+
+Autenticación en Frontend:
+- Almacenamiento de token: localStorage (key: 'authToken')
+- Interceptor de axios: Agregar token en header Authorization para todas las peticiones
+- Verificación de token: Al cargar la app, verificar si existe token válido
+- Redirección: Si token expirado o inválido, redirigir a /login
+- Logout: Eliminar token y limpiar estado, redirigir a /login
+
+Tema Oscuro (Implementación):
+- Variables CSS en theme.css:
+  * --bg-primary: Color de fondo principal
+  * --bg-secondary: Color de fondo secundario
+  * --text-primary: Color de texto principal
+  * --text-secondary: Color de texto secundario
+  * --accent-color: Color de acento
+  * --border-color: Color de bordes
+  * --shadow: Sombras
+- Clases utilitarias para componentes
+- Paleta de colores: Tonos oscuros (grises, azules oscuros)
+- Contraste: Cumplir con WCAG AA mínimo
+
+WebSocket/Socket.IO (Frontend):
+- Conexión: Establecer al iniciar sesión
+- Autenticación: Enviar token JWT al conectar
+- Eventos a escuchar:
+  * 'notification' - Nueva notificación
+  * 'new_message' - Nuevo mensaje en grupo
+  * 'session_reminder' - Recordatorio de sesión
+  * 'group_invitation' - Nueva invitación a grupo
+- Reconexión automática si se pierde conexión
+- Desconexión al hacer logout
+
+Componentes principales:
+- Header: Navegación principal, usuario actual, notificaciones
+- Sidebar: Menú lateral (según rol del usuario)
+- Modal: Componente reutilizable para modales
+- Notification: Componente para mostrar notificaciones toast
+- Loading: Spinner/loader para estados de carga
+- Form components: Inputs, botones, selects reutilizables
+
+Vistas principales por rol:
+
+Admin:
+- Dashboard con estadísticas generales
+- Gestión de usuarios (CRUD)
+- Gestión de grupos
+- Reportes y analytics
+- Configuración del sistema
+
+Profesor:
+- Dashboard con grupos asignados
+- Gestión de grupos propios
+- Ver sesiones de sus grupos
+- Evaluar tutores
+- Ver reportes de progreso
+
+Tutor:
+- Dashboard con sesiones asignadas
+- Calendario de disponibilidad
+- Ver grupos asignados
+- Mensajería con grupos
+- Ver evaluaciones recibidas
+- Badges ganados
+
+Estudiante:
+- Dashboard con grupos propios
+- Ver sesiones programadas
+- Mensajería en grupos
+- Evaluar sesiones
+- Ver materiales compartidos
+
+Gestión de API:
+- Base URL: Variable de entorno o constante
+- Interceptor de axios para:
+  * Agregar token en headers
+  * Manejar errores 401 (redirigir a login)
+  * Manejar errores 403 (mostrar mensaje)
+  * Mostrar loading states
+- Funciones async/await para todas las peticiones
+- Manejo de errores centralizado
+
+Validación de formularios:
+- Validación en cliente antes de enviar
+- Mensajes de error claros
+- Validación de email, password, campos requeridos
+- Feedback visual (campos válidos/inválidos)
+
+Responsive Design:
+- Mobile-first approach
+- Breakpoints: mobile (< 768px), tablet (768px - 1024px), desktop (> 1024px)
+- Sidebar colapsable en mobile
+- Tablas con scroll horizontal en mobile
+
+Convenciones de código:
+- camelCase para variables y funciones
+- PascalCase para componentes/clases
+- Nombres descriptivos
+- Comentarios en funciones complejas
+- Separación de responsabilidades (una función, una responsabilidad)
+
+Manejo de errores:
+- Try-catch en funciones async
+- Mensajes de error amigables para el usuario
+- Logging de errores en consola (desarrollo)
+- Mostrar notificaciones de error al usuario
+
+Optimizaciones:
+- Lazy loading de vistas (cargar solo cuando se necesitan)
+- Debounce en búsquedas
+- Throttle en eventos de scroll
+- Cache de datos frecuentemente consultados
+
+2.- Backend
+
+Tecnologías:
+- Lenguaje: Node.js + TypeScript (ES2020+)
+- Base de datos: PostgreSQL
+- Framework: Express.js
+
+Bibliotecas:
+- express: Framework web
+- pg: Cliente PostgreSQL
+- axios: Cliente HTTP (para llamadas externas si es necesario)
+- dotenv: Variables de entorno
+- express-validator: Validación de datos
+- express-rate-limit: Rate limiting
+- jsonwebtoken: JWT tokens
+- bcrypt: Hash de contraseñas
+- socket.io: WebSocket para notificaciones en tiempo real
+- cors: Configuración CORS
+- Jest + ts-jest: Testing en TypeScript
+- typescript, ts-node-dev: Tooling TypeScript para desarrollo
+- Tipos (@types): @types/express, @types/cors, @types/jsonwebtoken, @types/bcrypt, @types/node, @types/jest, @types/express-validator
+
+Estructura de carpetas:
+```
+backend/
+├── server.ts (punto de entrada)
+├── config/
+│   ├── database.ts (configuración de PostgreSQL)
+│   ├── socket.ts (configuración Socket.IO)
+│   └── s3.ts (configuración AWS S3)
+├── routes/
+│   ├── auth.ts (autenticación)
+│   ├── users.ts
+│   ├── groups.ts
+│   ├── tutors.ts
+│   ├── sessions.ts
+│   ├── messages.ts
+│   ├── files.ts
+│   ├── evaluations.ts
+│   ├── notifications.ts
+│   └── admin.ts
+├── controllers/
+│   ├── authController.ts
+│   ├── userController.ts
+│   ├── groupController.ts
+│   ├── tutorController.ts
+│   ├── sessionController.ts
+│   ├── messageController.ts
+│   ├── fileController.ts
+│   ├── evaluationController.ts
+│   ├── notificationController.ts
+│   └── adminController.ts
+├── middleware/
+│   ├── auth.ts (authenticateToken, authorizeRole)
+│   ├── validate.ts (validaciones con express-validator)
+│   ├── errorHandler.ts (manejo centralizado de errores)
+│   ├── rateLimiter.ts (configuración rate limiting)
+│   └── upload.ts (middleware para upload de archivos)
+├── utils/
+│   ├── jwt.ts (helpers para JWT)
+│   ├── password.ts (helpers para bcrypt)
+│   ├── response.ts (formato de respuestas)
+│   ├── logger.ts (logging)
+│   └── matching.ts (algoritmo de emparejamiento)
+├── models/
+│   └── (opcional: modelos de datos si se usa ORM) .ts
+├── tests/
+│   ├── unit/  (.test.ts)
+│   └── integration/  (.test.ts)
+├── .env.example
+├── tsconfig.json
+├── jest.config.ts
+├── types/ (tipos y definiciones globales)
+│   └── global.d.ts
+├── .eslintrc.cjs (opcional, ESLint con @typescript-eslint)
+├── .prettierrc (opcional)
+└── package.json
+```
+
+Estructura de respuestas API:
+
+Respuesta de éxito:
+```ts
+export interface ApiSuccess<T = unknown> {
+  success: true;
+  data: T;
+  message?: string;
+}
+```
+
+Respuesta de error:
+```ts
+export interface ApiError {
+  success: false;
+  code: number;
+  message: string;
+  details?: unknown;
+}
+```
+
+Códigos HTTP estándar:
+- 200: Éxito
+- 201: Creado exitosamente
+- 400: Bad Request (validación fallida)
+- 401: Unauthorized (no autenticado)
+- 403: Forbidden (sin permisos)
+- 404: Not Found
+- 500: Internal Server Error
+
+Estructura de Base de Datos (PostgreSQL):
+
+Tabla: users
+- id: SERIAL PRIMARY KEY
+- email: VARCHAR(255) UNIQUE NOT NULL
+- passwordHash: VARCHAR(255) NOT NULL
+- nombre: VARCHAR(255) NOT NULL
+- role: VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante'))
+- grado: INTEGER
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_email (email)
+- INDEX idx_role (role)
+
+Tabla: groups
+- id: SERIAL PRIMARY KEY
+- nombre: VARCHAR(255) NOT NULL
+- profesorId: INTEGER REFERENCES users(id) ON DELETE SET NULL
+- estado: VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo', 'completado'))
+- descripcion: TEXT
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- CONSTRAINT check_min_members CHECK (validar mínimo 1 miembro en triggers)
+- CONSTRAINT check_max_members CHECK (validar máximo 5 miembros en triggers)
+- INDEX idx_profesor (profesorId)
+- INDEX idx_estado (estado)
+
+Tabla: group_members
+- id: SERIAL PRIMARY KEY
+- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
+- joinedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- UNIQUE (groupId, userId)
+- INDEX idx_group (groupId)
+- INDEX idx_user (userId)
+
+Tabla: tutors
+- id: SERIAL PRIMARY KEY
+- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL
+- ratingPromedio: DECIMAL(3,2) DEFAULT 0.00 CHECK (ratingPromedio >= 0 AND ratingPromedio <= 5)
+- totalSesiones: INTEGER DEFAULT 0
+- totalEvaluaciones: INTEGER DEFAULT 0
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_user (userId)
+- INDEX idx_rating (ratingPromedio)
+
+Tabla: tutor_subjects
+- id: SERIAL PRIMARY KEY
+- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
+- materia: VARCHAR(100) NOT NULL
+- nivel: VARCHAR(50)
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- UNIQUE (tutorId, materia)
+- INDEX idx_tutor (tutorId)
+- INDEX idx_materia (materia)
+
+Tabla: tutor_availability
+- id: SERIAL PRIMARY KEY
+- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
+- diaSemana: INTEGER NOT NULL CHECK (diaSemana >= 0 AND diaSemana <= 6) -- 0=Domingo, 6=Sábado
+- horaInicio: TIME NOT NULL
+- horaFin: TIME NOT NULL
+- activo: BOOLEAN DEFAULT true
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_tutor (tutorId)
+- INDEX idx_dia (diaSemana)
+
+Tabla: sessions
+- id: SERIAL PRIMARY KEY
+- tutorId: INTEGER REFERENCES tutors(id) ON DELETE SET NULL
+- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- fecha: DATE NOT NULL
+- horaInicio: TIME NOT NULL
+- horaFin: TIME NOT NULL
+- estado: VARCHAR(20) NOT NULL DEFAULT 'programada' CHECK (estado IN ('programada', 'en_curso', 'completada', 'cancelada'))
+- tema: VARCHAR(255)
+- notas: TEXT
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_tutor (tutorId)
+- INDEX idx_group (groupId)
+- INDEX idx_fecha (fecha)
+- INDEX idx_estado (estado)
+
+Tabla: evaluations
+- id: SERIAL PRIMARY KEY
+- sessionId: INTEGER REFERENCES sessions(id) ON DELETE CASCADE NOT NULL
+- evaluatorId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- tutorId: INTEGER REFERENCES tutors(id) ON DELETE CASCADE NOT NULL
+- rating: INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
+- comentario: TEXT
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- UNIQUE (sessionId, evaluatorId)
+- INDEX idx_session (sessionId)
+- INDEX idx_tutor (tutorId)
+- INDEX idx_evaluator (evaluatorId)
+
+Tabla: messages
+- id: SERIAL PRIMARY KEY
+- senderId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- content: TEXT NOT NULL
+- tipo: VARCHAR(20) DEFAULT 'texto' CHECK (tipo IN ('texto', 'archivo', 'sistema'))
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_group (groupId)
+- INDEX idx_sender (senderId)
+- INDEX idx_created (createdAt)
+
+Tabla: files
+- id: SERIAL PRIMARY KEY
+- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- uploaderId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- nombre: VARCHAR(255) NOT NULL
+- s3Key: VARCHAR(500) NOT NULL
+- tipo: VARCHAR(100)
+- tamaño: INTEGER NOT NULL CHECK (tamaño <= 10485760) -- 10 MB en bytes
+- descripcion: TEXT
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_group (groupId)
+- INDEX idx_uploader (uploaderId)
+
+Tabla: group_invitations
+- id: SERIAL PRIMARY KEY
+- groupId: INTEGER REFERENCES groups(id) ON DELETE CASCADE NOT NULL
+- invitedUserId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
+- inviterId: INTEGER REFERENCES users(id) ON DELETE SET NULL NOT NULL
+- estado: VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aceptada', 'rechazada', 'expirada'))
+- expiresAt: TIMESTAMP
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updatedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_group (groupId)
+- INDEX idx_invited (invitedUserId)
+- INDEX idx_estado (estado)
+
+Tabla: badges
+- id: SERIAL PRIMARY KEY
+- nombre: VARCHAR(100) NOT NULL UNIQUE
+- descripcion: TEXT
+- icono: VARCHAR(255)
+- criterio: TEXT -- Descripción de cómo obtener el badge
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Tabla: user_badges
+- id: SERIAL PRIMARY KEY
+- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
+- badgeId: INTEGER REFERENCES badges(id) ON DELETE CASCADE NOT NULL
+- earnedAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- UNIQUE (userId, badgeId)
+- INDEX idx_user (userId)
+- INDEX idx_badge (badgeId)
+
+Tabla: notifications
+- id: SERIAL PRIMARY KEY
+- userId: INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL
+- tipo: VARCHAR(50) NOT NULL -- 'sesion_programada', 'invitacion_grupo', 'mensaje_nuevo', 'evaluacion_pendiente', etc.
+- titulo: VARCHAR(255) NOT NULL
+- mensaje: TEXT
+- leida: BOOLEAN DEFAULT false
+- relacionId: INTEGER -- ID de la entidad relacionada (sessionId, groupId, etc.)
+- relacionTipo: VARCHAR(50) -- Tipo de entidad relacionada
+- createdAt: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- INDEX idx_user (userId)
+- INDEX idx_leida (leida)
+- INDEX idx_created (createdAt)
+
+Funciones y Triggers importantes:
+- Función para validar límite de miembros en grupos (mínimo 1, máximo 5)
+- Trigger para actualizar ratingPromedio en tutors cuando se crea una evaluación
+- Trigger para actualizar totalSesiones y totalEvaluaciones en tutors
+- Trigger para actualizar updatedAt automáticamente
+- Función para calcular disponibilidad de tutores basada en tutor_availability y sessions
+
+Script SQL completo:
+- Archivo: database_schema.sql
+- Contiene: Todas las tablas, índices, constraints, funciones y triggers
+- Incluye: Comentarios, documentación y datos iniciales (badges de ejemplo)
+- Uso: Ejecutar con psql o cliente PostgreSQL: psql -U usuario -d nombre_db -f database_schema.sql
+
+Seguridad
+
+Autenticación:
+- Sistema: JWT (JSON Web Tokens) - Se utiliza JWT en lugar de sesiones tradicionales
+- Razón: Mejor para SPA, stateless, escalable, funciona bien con WebSockets
+- Hash de contraseñas: bcrypt con 10 salt rounds
+- Duración del token de acceso: 7 días
+- Refresh tokens: NO se implementan (los tokens de 7 días son suficientes para este sistema)
+- Almacenamiento: Los tokens se almacenan en el cliente (localStorage o sessionStorage)
+- Verificación: El token se verifica en cada request mediante middleware
+
+Bibliotecas necesarias:
+- jsonwebtoken: Para crear y verificar tokens JWT
+- bcrypt: Para hashear contraseñas
+ - @types/jsonwebtoken, @types/bcrypt: Tipos TypeScript
+
+Estructura del token JWT:
+- Payload contiene: { userId, role, email, iat, exp }
+- Algoritmo: HS256
+- Secret: Variable de entorno JWT_SECRET (mínimo 32 caracteres)
+
+Middleware de autenticación:
+- authenticateToken: Middleware que verifica el JWT en el header Authorization (formato: "Bearer <token>") usando tipos de Express (`Request`, `Response`, `NextFunction`)
+  * Si el token es válido: agrega req.user con { userId, role, email }
+  * Si el token es inválido o expirado: retorna 401 Unauthorized
+- authorizeRole: Middleware que verifica que el usuario tenga el rol requerido
+  * Roles disponibles: 'Admin', 'Profesor', 'Tutor', 'Estudiante'
+  * Uso: authorizeRole(['Admin', 'Profesor']) - permite acceso solo a esos roles
+  * Si no tiene el rol: retorna 403 Forbidden
+
+Endpoints de autenticación:
+- POST /api/auth/register: Registro de nuevo usuario
+  * Body: { email, password, role, grado, nombre }
+  * Validación: express-validator (email válido, password mínimo 8 caracteres, role válido)
+  * Retorna: { token, user: { id, email, role, grado } }
+- POST /api/auth/login: Inicio de sesión
+  * Body: { email, password }
+  * Validación: express-validator
+  * Retorna: { token, user: { id, email, role, grado } }
+- GET /api/auth/me: Obtener información del usuario autenticado
+  * Requiere: authenticateToken
+  * Retorna: { id, email, role, grado, nombre }
+- GET /api/auth/verify: Verificar si el token es válido
+  * Header: Authorization: Bearer <token>
+  * Retorna: { valid: true/false, user: {...} si es válido }
+
+Otras medidas de seguridad:
+- Validación de datos: express-validator en todos los endpoints
+- CORS: Configurado para permitir solo el origen del frontend
+- Rate limit: express-rate-limit (100 requests por 10 minutos por IP)
+- Variables de entorno: JWT_SECRET, DB_*, CORS_ORIGIN, PORT
+
+Endpoints del Sistema:
+
+Autenticación (/api/auth):
+- POST /api/auth/register - Registro de usuario
+- POST /api/auth/login - Login
+- GET /api/auth/me - Info del usuario autenticado
+- GET /api/auth/verify - Verificar token
+
+Usuarios (/api/users):
+- GET /api/users - Listar usuarios (Admin, Profesor)
+- GET /api/users/:id - Obtener usuario por ID
+- PUT /api/users/:id - Actualizar usuario (propio o Admin)
+- DELETE /api/users/:id - Eliminar usuario (Admin)
+- GET /api/users/:id/profile - Perfil completo de usuario
+
+Grupos (/api/groups):
+- GET /api/groups - Listar grupos (según rol)
+- POST /api/groups - Crear grupo (Profesor, Admin)
+- GET /api/groups/:id - Obtener grupo por ID
+- PUT /api/groups/:id - Actualizar grupo (Profesor responsable o Admin)
+- DELETE /api/groups/:id - Eliminar grupo (Profesor responsable o Admin)
+- GET /api/groups/:id/members - Listar miembros del grupo
+- POST /api/groups/:id/members - Agregar miembro al grupo
+- DELETE /api/groups/:id/members/:userId - Eliminar miembro del grupo
+- POST /api/groups/:id/invitations - Enviar invitación a grupo
+- GET /api/groups/:id/invitations - Listar invitaciones del grupo
+- PUT /api/groups/invitations/:invitationId/accept - Aceptar invitación
+- PUT /api/groups/invitations/:invitationId/reject - Rechazar invitación
+
+Tutores (/api/tutors):
+- GET /api/tutors - Listar tutores disponibles
+- GET /api/tutors/:id - Obtener tutor por ID
+- GET /api/tutors/:id/profile - Perfil completo del tutor
+- GET /api/tutors/:id/availability - Obtener disponibilidad del tutor
+- POST /api/tutors/:id/availability - Crear/actualizar disponibilidad (solo el tutor)
+- DELETE /api/tutors/:id/availability/:availabilityId - Eliminar disponibilidad
+- GET /api/tutors/:id/subjects - Obtener materias del tutor
+- POST /api/tutors/:id/subjects - Agregar materia al tutor
+- DELETE /api/tutors/:id/subjects/:subjectId - Eliminar materia
+- GET /api/tutors/matching - Buscar tutores para emparejamiento (algoritmo)
+  * Query params: groupId, materia, fecha, horaInicio, horaFin
+
+Sesiones (/api/sessions):
+- GET /api/sessions - Listar sesiones (según rol)
+- POST /api/sessions - Crear sesión (Profesor, Admin)
+- GET /api/sessions/:id - Obtener sesión por ID
+- PUT /api/sessions/:id - Actualizar sesión (Tutor asignado, Profesor responsable, Admin)
+- DELETE /api/sessions/:id - Cancelar sesión
+- PUT /api/sessions/:id/start - Iniciar sesión (Tutor)
+- PUT /api/sessions/:id/complete - Completar sesión (Tutor)
+- GET /api/sessions/calendar - Obtener sesiones en rango de fechas (calendario)
+
+Mensajes (/api/messages):
+- GET /api/messages/group/:groupId - Listar mensajes de un grupo
+- POST /api/messages - Enviar mensaje a grupo
+- DELETE /api/messages/:id - Eliminar mensaje (solo el sender o Admin)
+
+Archivos (/api/files):
+- GET /api/files/group/:groupId - Listar archivos de un grupo
+- POST /api/files/upload - Subir archivo (multipart/form-data)
+- GET /api/files/:id - Obtener información del archivo
+- GET /api/files/:id/download - Descargar archivo (genera URL firmada de S3)
+- DELETE /api/files/:id - Eliminar archivo (uploader o Admin)
+
+Evaluaciones (/api/evaluations):
+- GET /api/evaluations - Listar evaluaciones (según rol)
+- POST /api/evaluations - Crear evaluación (Estudiante, Profesor)
+- GET /api/evaluations/:id - Obtener evaluación por ID
+- PUT /api/evaluations/:id - Actualizar evaluación (solo el evaluator)
+- GET /api/evaluations/tutor/:tutorId - Evaluaciones de un tutor específico
+
+Notificaciones (/api/notifications):
+- GET /api/notifications - Listar notificaciones del usuario autenticado
+- GET /api/notifications/unread - Contar notificaciones no leídas
+- PUT /api/notifications/:id/read - Marcar notificación como leída
+- PUT /api/notifications/read-all - Marcar todas como leídas
+- DELETE /api/notifications/:id - Eliminar notificación
+
+Admin (/api/admin):
+- GET /api/admin/stats - Estadísticas generales (Admin)
+- GET /api/admin/users - Gestión de usuarios (Admin)
+- GET /api/admin/groups - Todos los grupos (Admin)
+- GET /api/admin/reports - Reportes y analytics (Admin)
+- GET /api/admin/badges - Gestión de badges (Admin)
+- POST /api/admin/badges - Crear badge (Admin)
+- POST /api/admin/badges/:badgeId/assign/:userId - Asignar badge (Admin)
+
+Variables de entorno requeridas (.env):
+- NODE_ENV=development|production
+- PORT=3000 (puerto del servidor)
+- JWT_SECRET= (mínimo 32 caracteres, clave secreta para JWT)
+- DB_HOST=localhost
+- DB_PORT=5432
+- DB_NAME=nombre_base_datos
+- DB_USER=usuario_postgres
+- DB_PASSWORD=password_postgres
+- CORS_ORIGIN=http://localhost:8080 (origen del frontend)
+- AWS_ACCESS_KEY_ID= (para S3)
+- AWS_SECRET_ACCESS_KEY= (para S3)
+- AWS_REGION=us-east-1 (región de S3)
+- S3_BUCKET_NAME=nombre_bucket
+- SOCKET_IO_PATH=/socket.io (path para Socket.IO)
+ - TS_NODE_TRANSPILE_ONLY=true (opcional, acelerar ts-node-dev en desarrollo)
+
+Socket.IO (Backend):
+- Configuración: En config/socket.ts
+- Autenticación: Middleware para verificar JWT al conectar
+- Namespaces: Usar namespace por defecto '/'
+- Eventos emitidos desde servidor:
+  * 'notification' - Nueva notificación para usuario
+  * 'new_message' - Nuevo mensaje en grupo
+  * 'session_reminder' - Recordatorio de sesión próxima
+  * 'group_invitation' - Nueva invitación a grupo
+  * 'session_updated' - Sesión actualizada
+  * 'group_updated' - Grupo actualizado
+- Eventos escuchados desde cliente:
+  * 'join_group' - Unirse a room de grupo
+  * 'leave_group' - Salir de room de grupo
+- Rooms: Por grupo (room: 'group_${groupId}') y por usuario (room: 'user_${userId}')
+- Estructura de mensajes:
+  * { type: string, data: any, timestamp: Date }
+- Reconexión: Configurar reconexión automática
+- Desconexión: Limpiar rooms al desconectar
+
+Configuración S3:
+- Biblioteca: AWS SDK v3 (@aws-sdk/client-s3, @aws-sdk/s3-request-presigner)
+- Configuración: En config/s3.ts
+- Bucket: Variable de entorno S3_BUCKET_NAME
+- Estructura de carpetas:
+  * groups/{groupId}/files/{timestamp}_{filename}
+- Políticas:
+  * Upload: Presigned URL con expiración de 1 hora
+  * Download: Presigned URL con expiración de 1 hora
+- Validaciones:
+  * Tamaño máximo: 10 MB (10485760 bytes)
+  * Tipos permitidos: Definir lista (pdf, doc, docx, jpg, png, etc.)
+- Endpoints:
+  * POST /api/files/upload - Genera presigned URL para upload
+  * GET /api/files/:id/download - Genera presigned URL para download
+
+Manejo de errores:
+- Middleware centralizado: errorHandler.ts
+- Tipos de errores:
+  * ValidationError (400): Errores de validación
+  * AuthenticationError (401): No autenticado
+  * AuthorizationError (403): Sin permisos
+  * NotFoundError (404): Recurso no encontrado
+  * DatabaseError (500): Error de base de datos
+  * ServerError (500): Error interno del servidor
+- Logging: Registrar todos los errores con logger.ts
+- Respuesta: Formato estándar de error definido arriba
+
+Logging:
+- Biblioteca: winston o console (según NODE_ENV)
+- Niveles: error, warn, info, debug
+- Formato: JSON en producción, texto en desarrollo
+- Archivos: logs/error.log, logs/combined.log
+- Rotación: Por tamaño o fecha
+ - Tipos: Crear `Logger` tipado y helpers en `utils/logger.ts`
+
+Testing:
+- Framework: Jest + ts-jest
+- Estructura: tests/unit/ y tests/integration/ (.test.ts)
+- Cobertura objetivo: 70% mínimo
+- Tests a crear:
+  * Unitarios: Funciones utilitarias, middleware, helpers
+  * Integración: Endpoints principales, flujos completos
+- Mocking: Base de datos (pg mock), S3 (mock AWS SDK)
+ - Configuración: `jest.config.ts` con preset ts-jest y testEnvironment 'node'
+
+Convenciones de código:
+- camelCase para variables y funciones
+- PascalCase para clases
+- Nombres descriptivos
+- Comentarios TSDoc para funciones públicas
+- Separación de responsabilidades
+- Una función, una responsabilidad
+ - Tipado explícito en APIs públicas; evitar `any` en producción
+
+Algoritmo de Emparejamiento (matching):
+- Ubicación: utils/matching.ts
+- Función: matchTutorToGroup(groupId: number, materia: string, fecha: string, horaInicio: string, horaFin: string): Promise<Array<TutorMatch>>
+- Criterios de matching (con pesos):
+  * Grado del tutor (peso: 30%): Mismo grado = 100 puntos, grado superior = 80 puntos
+  * Materia de especialidad (peso: 25%): Coincide materia = 100 puntos
+  * Disponibilidad (peso: 25%): Disponible en fecha/hora = 100 puntos
+  * Rating promedio (peso: 20%): 5 estrellas = 100 puntos, escala lineal
+- Fórmula de scoring:
+  * score = (grado_score * 0.30) + (materia_score * 0.25) + (disponibilidad_score * 0.25) + (rating_score * 0.20)
+- Priorización:
+  1. Score total (mayor a menor)
+  2. En caso de empate: Mayor rating promedio
+  3. En caso de empate: Mayor número de sesiones completadas
+  4. En caso de empate: Más reciente (última sesión)
+- Validaciones:
+  * Verificar que tutor no tenga conflicto de horario
+  * Verificar que tutor tenga disponibilidad configurada
+  * Verificar que tutor tenga la materia en sus especialidades
+  * Verificar que grado del tutor sea igual o superior al del grupo
+- Retorna: Array de tutores ordenados por score (mejor match primero)
+
+Desarrollo:
+- Estructura de proyecto:
+  * Carpeta backend/ para código del servidor
+  * Carpeta frontend/ para código del cliente
+  * Separación clara de responsabilidades
+- Convenciones:
+  * camelCase para variables y funciones
+  * PascalCase para clases y componentes
+  * Nombres descriptivos y claros
+- Testing:
+  * Pruebas unitarias con Jest
+  * Cobertura mínima del 70%
+  * Tests de integración para endpoints críticos
+- Respuestas API:
+  * Formato estándar: { success: boolean, data?: any, code?: number, message?: string }
+  * Códigos HTTP estándar
+- Documentación:
+  * Comentarios TSDoc en funciones públicas
+  * README con instrucciones de instalación y uso
+  * Documentación de API (opcional: Swagger/OpenAPI)
+
+Nota importante:
+- No se implementan las funciones de acceso a la base de datos, solo los endpoints
+- Los endpoints deben estar listos para recibir las funciones de acceso a BD cuando se implementen
+- La lógica de negocio va en los controllers (archivos .ts con tipado)
+- Las queries SQL van en funciones separadas (no en los controllers) y con tipos para entradas/salidas

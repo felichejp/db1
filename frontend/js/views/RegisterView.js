@@ -9,25 +9,28 @@ import { validateForm } from '../utils/validators.js';
  */
 class RegisterView {
   render() {
+    document.body.classList.add('auth-page');
     const container = document.getElementById('view-container');
+    container.className = 'auth-container';
     container.innerHTML = `
-      <div class="card" style="max-width: 400px; margin: 2rem auto;">
-        <div class="card__header">
-          <h2 class="card__title">Registro</h2>
+      <div class="auth-card">
+        <div class="auth-welcome">
+          <h1 class="auth-welcome__title">¡Bienvenido!</h1>
+          <p class="auth-welcome__subtitle">Crea tu cuenta para comenzar</p>
         </div>
-        <div class="card__body">
+        <div class="auth-form">
           <form id="register-form">
             <div class="form-group">
               <label class="form-label" for="reg-email">Email</label>
-              <input type="email" id="reg-email" class="form-input" required>
+              <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-password">Contraseña</label>
-              <input type="password" id="reg-password" class="form-input" required>
+              <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-nombre">Nombre</label>
-              <input type="text" id="reg-nombre" class="form-input" required>
+              <input type="text" id="reg-nombre" class="form-input" placeholder="Tu nombre completo" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-role">Rol</label>
@@ -41,12 +44,12 @@ class RegisterView {
             </div>
             <div class="form-group">
               <label class="form-label" for="reg-grado">Grado (opcional)</label>
-              <input type="number" id="reg-grado" class="form-input" min="1">
+              <input type="number" id="reg-grado" class="form-input" placeholder="Ej: 5" min="1">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Registrarse</button>
+            <button type="submit" class="btn btn-primary auth-submit">Registrarse</button>
           </form>
-          <p class="text-center mt-2">
-            ¿Ya tienes cuenta? <a href="#/login">Inicia sesión aquí</a>
+          <p class="auth-footer">
+            ¿Ya tienes cuenta? <a href="#/login" class="auth-link">Inicia sesión aquí</a>
           </p>
         </div>
       </div>
@@ -97,4 +100,5 @@ class RegisterView {
 }
 
 export default new RegisterView();
+
 

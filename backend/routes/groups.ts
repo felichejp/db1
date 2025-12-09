@@ -20,3 +20,4 @@ router.put('/invitations/:invitationId/reject', authenticateToken, groupControll
 
 export default router;
 
+

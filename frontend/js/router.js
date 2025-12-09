@@ -6,6 +6,7 @@ import GroupsView from './views/GroupsView.js';
 import NotFoundView from './views/NotFoundView.js';
 import Header from './components/Header.js';
 import Sidebar from './components/Sidebar.js';
+import ChatWidget from './components/ChatWidget.js';
 
 /**
  * Router hash-based
@@ -22,6 +23,7 @@ class Router {
     this.routes.set('#/login', { view: LoginView, protected: false });
     this.routes.set('#/register', { view: RegisterView, protected: false });
     this.routes.set('#/dashboard', { view: DashboardView, protected: true });
+    this.routes.set('#/groups', { view: GroupsView, protected: true });
     // TODO: Agregar más rutas cuando se implementen las vistas
 
     // Escuchar cambios de hash
@@ -31,41 +33,12 @@ class Router {
     this.handleRoute();
   }
 
-  handleRoute() {
+  async handleRoute() {
     const hash = window.location.hash || '#/dashboard';
-    
-    // Manejar rutas dinámicas
-    if (hash.startsWith('#/groups/')) {
-      const groupId = hash.split('/')[2];
-      if (groupId) {
-        // Verificar autenticación
-        if (!authService.isAuthenticated()) {
-          window.location.hash = '#/login';
-          return;
-        }
-        GroupsView.renderGroupDetails(groupId);
-        Header.render();
-        Sidebar.render();
-        return;
-      }
-    }
-
     const route = this.routes.get(hash);
 
-    // Si no hay ruta, verificar si es una ruta dinámica conocida
+    // Si no hay ruta, mostrar 404
     if (!route) {
-      // Rutas dinámicas de grupos
-      if (hash === '#/groups') {
-        if (!authService.isAuthenticated()) {
-          window.location.hash = '#/login';
-          return;
-        }
-        GroupsView.render();
-        Header.render();
-        Sidebar.render();
-        return;
-      }
-
       NotFoundView.render();
       if (authService.isAuthenticated()) {
         Header.render();
@@ -75,16 +48,34 @@ class Router {
     }
 
     // Verificar autenticación para rutas protegidas
-    if (route.protected && !authService.isAuthenticated()) {
-      window.location.hash = '#/login';
-      return;
+    if (route.protected) {
+      if (!authService.isAuthenticated()) {
+        window.location.hash = '#/login';
+        return;
+      }
+      
+      // Verificar que el token sea válido antes de renderizar
+      const isValid = await authService.verifyToken();
+      if (!isValid) {
+        authService.logout();
+        window.location.hash = '#/login';
+        return;
+      }
     }
 
     // Si está en login/register y ya está autenticado, redirigir a dashboard
     if (!route.protected && authService.isAuthenticated()) {
-      window.location.hash = '#/dashboard';
-      return;
+      const isValid = await authService.verifyToken();
+      if (isValid) {
+        window.location.hash = '#/dashboard';
+        return;
+      } else {
+        authService.logout();
+      }
     }
+
+    // Limpiar clase auth-page si existe
+    document.body.classList.remove('auth-page');
 
     // Renderizar vista
     route.view.render();
@@ -97,6 +88,8 @@ class Router {
       Header.container.innerHTML = '';
       Sidebar.container.innerHTML = '';
     }
+
+    ChatWidget.updateVisibility(authService.isAuthenticated());
   }
 
   navigate(path) {
@@ -105,4 +98,5 @@ class Router {
 }
 
 export default new Router();
+
 

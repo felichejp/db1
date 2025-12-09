@@ -7,6 +7,8 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
+    this.connectionState = 'disconnected';
+    this.connectionCallbacks = [];
   }
 
   /**
@@ -36,14 +38,44 @@ class SocketService {
 
     this.socket.on('connect', () => {
       console.log('Socket.IO conectado');
+      this.connectionState = 'connected';
+      this.notifyConnectionChange('connected');
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Socket.IO desconectado');
+    this.socket.on('disconnect', (reason) => {
+      console.log('Socket.IO desconectado:', reason);
+      this.connectionState = 'disconnected';
+      this.notifyConnectionChange('disconnected');
+      
+      // Intentar reconectar si fue desconexión inesperada
+      if (reason === 'io server disconnect') {
+        // El servidor forzó la desconexión, no reconectar
+        return;
+      }
+      // Otras desconexiones pueden reconectar automáticamente
     });
 
     this.socket.on('connect_error', (error) => {
       console.error('Error conectando Socket.IO:', error);
+      this.connectionState = 'error';
+      this.notifyConnectionChange('error');
+    });
+
+    // Manejar errores del servidor
+    this.socket.on('error', (error) => {
+      console.error('Error en Socket.IO:', error);
+      if (error.type === 'authorization_error') {
+        console.warn('Error de autorización en Socket.IO');
+      }
+    });
+
+    // Eventos de confirmación
+    this.socket.on('joined_group', (data) => {
+      console.log('Unido al grupo:', data.groupId);
+    });
+
+    this.socket.on('left_group', (data) => {
+      console.log('Salido del grupo:', data.groupId);
     });
 
     // Re-registrar listeners existentes
@@ -107,7 +139,44 @@ class SocketService {
   leaveGroup(groupId) {
     this.emit('leave_group', groupId);
   }
+
+  /**
+   * Obtiene el estado de la conexión
+   */
+  getConnectionState() {
+    return this.connectionState;
+  }
+
+  /**
+   * Verifica si está conectado
+   */
+  isConnected() {
+    return this.socket?.connected || false;
+  }
+
+  /**
+   * Registra un callback para cambios de estado de conexión
+   */
+  onConnectionChange(callback) {
+    this.connectionCallbacks.push(callback);
+    // Llamar inmediatamente con el estado actual
+    callback(this.connectionState);
+  }
+
+  /**
+   * Notifica a todos los callbacks de cambio de estado
+   */
+  notifyConnectionChange(state) {
+    this.connectionCallbacks.forEach(callback => {
+      try {
+        callback(state);
+      } catch (error) {
+        console.error('Error en callback de conexión:', error);
+      }
+    });
+  }
 }
 
 export default new SocketService();
+
 

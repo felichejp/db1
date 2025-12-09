@@ -127,32 +127,6 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * Obtener estudiantes disponibles para chat (todos los estudiantes pueden ver otros estudiantes)
- */
-export async function getStudents(req: Request, res: Response): Promise<void> {
-  try {
-    if (!req.user) {
-      sendError(res, 'No autenticado', 401);
-      return;
-    }
-
-    // Obtener todos los estudiantes (excluyendo al usuario actual)
-    const result = await query(
-      `SELECT id, email, nombre, role, grado, "createdAt" 
-       FROM users 
-       WHERE role = 'Estudiante' AND id != $1
-       ORDER BY nombre ASC`,
-      [req.user.userId]
-    );
-
-    sendSuccess(res, result.rows);
-  } catch (error) {
-    console.error('Error en getStudents:', error);
-    sendError(res, 'Error al obtener estudiantes', 500);
-  }
-}
-
-/**
  * Obtener perfil completo de usuario
  */
 export async function getUserProfile(
@@ -209,6 +183,46 @@ export async function getUserProfile(
   } catch (error) {
     console.error('Error en getUserProfile:', error);
     sendError(res, 'Error al obtener perfil', 500);
+  }
+}
+
+/**
+ * Buscar usuarios por nombre o email
+ */
+export async function searchUsers(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, 'No autenticado', 401);
+      return;
+    }
+
+    const { q } = req.query;
+    const searchTerm = typeof q === 'string' ? q.trim() : '';
+
+    if (!searchTerm || searchTerm.length < 2) {
+      sendError(res, 'El término de búsqueda debe tener al menos 2 caracteres', 400);
+      return;
+    }
+
+    const currentUserId = typeof req.user.userId === 'number' 
+      ? req.user.userId 
+      : parseInt(String(req.user.userId), 10);
+
+    // Buscar usuarios que coincidan con el término (excluyendo al usuario actual)
+    const result = await query(
+      `SELECT id, email, nombre, role, grado
+       FROM users
+       WHERE id != $1
+       AND (LOWER(nombre) LIKE LOWER($2) OR LOWER(email) LIKE LOWER($2))
+       ORDER BY nombre ASC
+       LIMIT 20`,
+      [currentUserId, `%${searchTerm}%`]
+    );
+
+    sendSuccess(res, result.rows);
+  } catch (error) {
+    console.error('Error en searchUsers:', error);
+    sendError(res, 'Error al buscar usuarios', 500);
   }
 }
 

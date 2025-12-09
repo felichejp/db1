@@ -4,6 +4,7 @@ import { sessionsAPI } from '../api/sessions.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
+import { joinGroupRooms } from '../utils/socketHelpers.js';
 
 /**
  * Vista de Dashboard
@@ -43,13 +44,30 @@ class DashboardView {
     const content = document.getElementById('dashboard-content');
     
     try {
-      const [groupsRes, sessionsRes] = await Promise.all([
+      const [groupsRes, sessionsRes] = await Promise.allSettled([
         groupsAPI.getAll(),
         sessionsAPI.getAll()
       ]);
 
-      const groups = groupsRes.success ? groupsRes.data : [];
-      const sessions = sessionsRes.success ? sessionsRes.data : [];
+      // Manejar resultados (pueden ser errores 401)
+      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success 
+        ? groupsRes.value.data 
+        : [];
+      const sessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success 
+        ? sessionsRes.value.data 
+        : [];
+
+      // Si hay errores 401, redirigir a login
+      if (groupsRes.status === 'rejected' && groupsRes.reason?.response?.status === 401) {
+        authService.logout();
+        window.location.hash = '#/login';
+        return;
+      }
+
+      // Unirse automáticamente a rooms de grupos para recibir eventos en tiempo real
+      if (groups.length > 0) {
+        await joinGroupRooms(groups);
+      }
 
       let html = '';
 
@@ -164,4 +182,5 @@ class DashboardView {
 }
 
 export default new DashboardView();
+
 

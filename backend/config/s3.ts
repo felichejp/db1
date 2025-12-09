@@ -99,3 +99,4 @@ export function validateFileType(mimetype: string): boolean {
   return allowedTypes.includes(mimetype);
 }
 
+

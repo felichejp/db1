@@ -49,6 +49,14 @@ export const validateId = [
 ];
 
 /**
+ * Validaciones para groupId numérico en parámetros
+ */
+export const validateGroupId = [
+  param('groupId').isInt({ min: 1 }).withMessage('groupId inválido'),
+  validate
+];
+
+/**
  * Validaciones para crear grupo
  */
 export const validateCreateGroup = [
@@ -83,4 +91,5 @@ export const validateCreateEvaluation = [
   body('comentario').optional().isString(),
   validate
 ];
+
 

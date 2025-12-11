@@ -14,8 +14,11 @@ router.delete('/:id', authenticateToken, validateId, sessionController.deleteSes
 router.put('/:id/start', authenticateToken, validateId, sessionController.startSession);
 router.put('/:id/complete', authenticateToken, validateId, sessionController.completeSession);
 <<<<<<< HEAD
+<<<<<<< HEAD
 router.post('/request', authenticateToken, sessionController.requestSession);
 router.put('/:id/status', authenticateToken, authorizeRole('Admin', 'Profesor', 'Tutor'), validateId, sessionController.updateSessionStatus);
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo
 

@@ -24,12 +24,18 @@ export async function getGroupMessages(req: Request, res: Response): Promise<voi
 export async function createMessage(req: Request, res: Response): Promise<void> {
   try {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (!req.user) {
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     console.log('createMessage - Inicio', { body: req.body, user: req.user });
     
     if (!req.user) {
       console.log('createMessage - No autenticado');
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       sendError(res, 'No autenticado', 401);
       return;
@@ -37,8 +43,11 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
     const { groupId, content, tipo } = req.body;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     console.log('createMessage - Datos recibidos', { groupId, content: content?.substring(0, 50), tipo, userId: req.user.userId, role: req.user.role });
 
     // Validaciones
@@ -118,11 +127,15 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
     // Insertar mensaje
     console.log('createMessage - Insertando mensaje...', { userId, groupIdNum, content: content.substring(0, 30), tipo: tipo || 'texto' });
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     const result = await query(
       `INSERT INTO messages ("senderId", "groupId", content, tipo)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
+<<<<<<< HEAD
 <<<<<<< HEAD
       [req.user.userId, groupId, content, tipo || 'texto']
     );
@@ -132,6 +145,8 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('Error en createMessage:', error);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       [userId, groupIdNum, content.trim(), tipo || 'texto']
     );
 
@@ -171,6 +186,9 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     } else {
       console.error('Error desconocido:', error);
     }
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendError(res, 'Error al enviar mensaje', 500);
   }
@@ -186,7 +204,12 @@ export async function deleteMessage(req: Request, res: Response): Promise<void> 
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const msgResult = await query('SELECT "senderId" FROM messages WHERE id = $1', [id]);
+=======
+    // Obtener información del mensaje antes de eliminarlo
+    const msgResult = await query('SELECT "senderId", "groupId" FROM messages WHERE id = $1', [id]);
+>>>>>>> origin/Juan_Nambo
 =======
     // Obtener información del mensaje antes de eliminarlo
     const msgResult = await query('SELECT "senderId", "groupId" FROM messages WHERE id = $1', [id]);
@@ -197,7 +220,13 @@ export async function deleteMessage(req: Request, res: Response): Promise<void> 
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (req.user.role !== 'Admin' && msgResult.rows[0].senderId !== req.user.userId) {
+=======
+    const message = msgResult.rows[0];
+
+    if (req.user.role !== 'Admin' && message.senderId !== req.user.userId) {
+>>>>>>> origin/Juan_Nambo
 =======
     const message = msgResult.rows[0];
 
@@ -209,11 +238,17 @@ export async function deleteMessage(req: Request, res: Response): Promise<void> 
 
     await query('DELETE FROM messages WHERE id = $1', [id]);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     
     // Emitir evento de eliminación al grupo
     emitToGroup(message.groupId, 'message_deleted', { messageId: parseInt(id, 10) });
     
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, null, 'Mensaje eliminado');
   } catch (error) {

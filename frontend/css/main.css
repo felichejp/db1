@@ -1,5 +1,8 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 /* Layout */
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo
 #app {
@@ -8,6 +11,7 @@
   flex-direction: column;
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 /* Glassmorphism Components */
 .card {
@@ -94,12 +98,21 @@
 #header-container {
   background-color: var(--bg-secondary);
 >>>>>>> origin/Juan_Nambo
+=======
+/* Header */
+#header-container {
+  background-color: var(--bg-secondary);
+>>>>>>> origin/Juan_Nambo
   border-bottom: 1px solid var(--border-color);
   padding: var(--spacing-md) var(--spacing-xl);
   position: sticky;
   top: 0;
   z-index: 100;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  box-shadow: var(--shadow-sm);
+>>>>>>> origin/Juan_Nambo
 =======
   box-shadow: var(--shadow-sm);
 >>>>>>> origin/Juan_Nambo
@@ -116,11 +129,16 @@
 .header__logo {
   font-size: 1.5rem;
 <<<<<<< HEAD
+<<<<<<< HEAD
   font-weight: 800;
   background: var(--gradient-secondary);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+=======
+  font-weight: bold;
+  color: var(--accent-color);
+>>>>>>> origin/Juan_Nambo
 =======
   font-weight: bold;
   color: var(--accent-color);
@@ -133,6 +151,7 @@
   align-items: center;
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 /* Sidebar */
 #sidebar-container {
@@ -149,6 +168,8 @@
   transition: transform var(--transition-normal);
   z-index: 90;
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 .header__user {
   display: flex;
   align-items: center;
@@ -190,11 +211,15 @@
 
 .sidebar--collapsed {
   transform: translateX(-100%);
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 }
 
 .sidebar__menu {
   list-style: none;
+<<<<<<< HEAD
 <<<<<<< HEAD
   padding: 0;
   margin: 0;
@@ -239,6 +264,8 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
   border: 1px solid rgba(99, 102, 241, 0.3);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   padding: var(--spacing-md);
 }
 
@@ -262,12 +289,16 @@
 .sidebar__link.active {
   background-color: var(--accent-color);
   color: white;
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 }
 
 /* Main Content */
 #main-content {
   flex: 1;
+<<<<<<< HEAD
 <<<<<<< HEAD
   margin-left: 260px;
   padding: var(--spacing-xl);
@@ -343,6 +374,8 @@
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(4px);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   margin-left: 250px;
   padding: var(--spacing-xl);
   transition: margin-left var(--transition-normal);
@@ -365,6 +398,9 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
   display: flex;
   align-items: center;
@@ -377,6 +413,7 @@
 }
 
 .spinner {
+<<<<<<< HEAD
 <<<<<<< HEAD
   width: 40px;
   height: 40px;
@@ -408,6 +445,8 @@
 .w-full {
   width: 100%;
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   width: 50px;
   height: 50px;
   border: 4px solid var(--border-color);
@@ -423,6 +462,9 @@
 /* Utility Classes */
 .hidden {
   display: none !important;
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 }
 
@@ -431,7 +473,10 @@
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 .text-muted {
   color: var(--text-muted);
 }
@@ -443,12 +488,16 @@
 .mb-2 { margin-bottom: var(--spacing-md); }
 .mb-3 { margin-bottom: var(--spacing-lg); }
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 /* Responsive */
 @media (max-width: 768px) {
   #sidebar-container {
     transform: translateX(-100%);
   }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
   #sidebar-container.sidebar--open {
@@ -624,6 +673,8 @@
     border: 1px solid rgba(239, 68, 68, 0.3);
   }
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   
   #sidebar-container.sidebar--open {
     transform: translateX(0);
@@ -639,4 +690,7 @@
 }
 
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo

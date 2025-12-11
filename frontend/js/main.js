@@ -2,6 +2,11 @@ import router from './router.js';
 import authService from './services/authService.js';
 import socketService from './services/socketService.js';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { messagesAPI } from './api/messages.js';
+import { groupsAPI } from './api/groups.js';
+>>>>>>> origin/Juan_Nambo
 =======
 import { messagesAPI } from './api/messages.js';
 import { groupsAPI } from './api/groups.js';
@@ -13,7 +18,10 @@ window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
 window.SOCKET_IO_PATH = window.SOCKET_IO_PATH || '/socket.io';
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 // Exponer servicios globalmente para debugging (solo en desarrollo)
 if (window.API_BASE_URL.includes('localhost')) {
   window.authService = authService;
@@ -27,6 +35,9 @@ if (window.API_BASE_URL.includes('localhost')) {
   console.log('   - window.groupsAPI');
 }
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 // Configurar interceptor de axios
 axios.interceptors.request.use(
@@ -65,7 +76,11 @@ axios.interceptors.response.use(
 
 // Inicializar aplicación
 <<<<<<< HEAD
+<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', () => {
+=======
+document.addEventListener('DOMContentLoaded', async () => {
+>>>>>>> origin/Juan_Nambo
 =======
 document.addEventListener('DOMContentLoaded', async () => {
 >>>>>>> origin/Juan_Nambo
@@ -74,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Verificar autenticación al cargar
   if (authService.isAuthenticated()) {
     // Verificar token
+<<<<<<< HEAD
 <<<<<<< HEAD
     authService.verifyToken().then((isValid) => {
       if (!isValid) {
@@ -104,6 +120,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     const isValid = await authService.verifyToken();
     if (!isValid) {
       console.log('Token inválido, cerrando sesión');
@@ -236,6 +254,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Usuario no autenticado');
     }
   
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
   // El router ya maneja la ruta inicial
 });

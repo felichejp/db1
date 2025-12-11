@@ -11,7 +11,11 @@ import { query } from '../config/database';
 export async function register(req: Request, res: Response): Promise<void> {
   try {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const { email, password, nombre, role, grado, telefono, carrera } = req.body;
+=======
+    const { email, password, nombre, role, grado } = req.body;
+>>>>>>> origin/Juan_Nambo
 =======
     const { email, password, nombre, role, grado } = req.body;
 >>>>>>> origin/Juan_Nambo
@@ -33,15 +37,21 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Crear usuario
     const result = await query(
 <<<<<<< HEAD
+<<<<<<< HEAD
       `INSERT INTO users (email, "passwordHash", nombre, role, grado, telefono, carrera)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, email, nombre, role, grado, telefono, carrera`,
       [email, passwordHash, nombre, role, grado || null, telefono || null, carrera || null]
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       `INSERT INTO users (email, "passwordHash", nombre, role, grado)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, nombre, role, grado`,
       [email, passwordHash, nombre, role, grado || null]
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     );
 

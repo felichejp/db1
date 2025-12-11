@@ -5,6 +5,11 @@ import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { joinGroupRooms } from '../utils/socketHelpers.js';
+import ChatComponent from '../components/ChatComponent.js';
+>>>>>>> origin/Juan_Nambo
 =======
 import { joinGroupRooms } from '../utils/socketHelpers.js';
 import ChatComponent from '../components/ChatComponent.js';
@@ -21,6 +26,7 @@ class DashboardView {
     const container = document.getElementById('view-container');
     container.innerHTML = `
 <<<<<<< HEAD
+<<<<<<< HEAD
       <div class="dashboard-header mb-3" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h1 class="card__title" style="font-size: 2.5rem;">Hola, ${user.nombre}</h1>
@@ -32,6 +38,8 @@ class DashboardView {
       <div id="dashboard-content">
         <div class="spinner" style="margin: 3rem auto;"></div>
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       <div class="card">
         <div class="card__header">
           <h1 class="card__title">Bienvenido, ${user.nombre}</h1>
@@ -42,6 +50,9 @@ class DashboardView {
             <div class="spinner"></div>
           </div>
         </div>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
@@ -62,7 +73,11 @@ class DashboardView {
 
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       const [groupsRes, sessionsRes] = await Promise.all([
+=======
+      const [groupsRes, sessionsRes] = await Promise.allSettled([
+>>>>>>> origin/Juan_Nambo
 =======
       const [groupsRes, sessionsRes] = await Promise.allSettled([
 >>>>>>> origin/Juan_Nambo
@@ -71,9 +86,12 @@ class DashboardView {
       ]);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       const groups = groupsRes.success ? groupsRes.data : [];
       const sessions = sessionsRes.success ? sessionsRes.data : [];
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       // Manejar resultados (pueden ser errores 401)
       const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success
         ? groupsRes.value.data
@@ -93,6 +111,9 @@ class DashboardView {
       if (groups.length > 0) {
         await joinGroupRooms(groups);
       }
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 
       let html = '';
@@ -109,9 +130,12 @@ class DashboardView {
 
       content.innerHTML = html;
 <<<<<<< HEAD
+<<<<<<< HEAD
     } catch (error) {
       content.innerHTML = '<p class="text-muted text-center">Error al cargar datos</p>';
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 
       // Inicializar Chat si existe el contenedor
       if (document.getElementById('chat-container')) {
@@ -121,12 +145,16 @@ class DashboardView {
       }
     } catch (error) {
       content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     }
   }
 
   renderAdminDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
 <<<<<<< HEAD
       <div class="dashboard-grid">
         <div class="stat-card">
@@ -138,10 +166,15 @@ class DashboardView {
           <div class="stat-value">${sessions.length}</div>
         </div>
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       <div>
         <h2>Estadísticas</h2>
         <p>Grupos: ${groups.length}</p>
         <p>Sesiones: ${sessions.length}</p>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
@@ -149,6 +182,7 @@ class DashboardView {
 
   renderProfesorDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
 <<<<<<< HEAD
       <div class="mb-3">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -162,12 +196,17 @@ class DashboardView {
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsGrid(sessions.slice(0, 4)) : this.renderEmptyState('No hay sesiones programadas')}
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       <div>
         <h2>Mis Grupos (${groups.length})</h2>
         ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
         <h2 class="mt-3">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
         <div id="chat-container"></div>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
@@ -175,6 +214,7 @@ class DashboardView {
 
   renderTutorDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
 <<<<<<< HEAD
       <div class="dashboard-grid mb-3">
         <div class="stat-card">
@@ -195,12 +235,18 @@ class DashboardView {
         <h2>Mis Sesiones (${sessions.length})</h2>
         ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No tienes sesiones asignadas</p>'}
 >>>>>>> origin/Juan_Nambo
+=======
+      <div>
+        <h2>Mis Sesiones (${sessions.length})</h2>
+        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No tienes sesiones asignadas</p>'}
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
   renderEstudianteDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
 <<<<<<< HEAD
       <div class="mb-3">
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Mis Grupos</h2>
@@ -211,17 +257,23 @@ class DashboardView {
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsGrid(sessions.slice(0, 4)) : this.renderEmptyState('No tienes sesiones programadas')}
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       <div>
         <h2>Mis Grupos (${groups.length})</h2>
         ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
         <h2 class="mt-3">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
         <div id="chat-container"></div>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   renderGroupsGrid(groups) {
     return `
@@ -239,6 +291,8 @@ class DashboardView {
           </div>
         `).join('')}
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   renderGroupsList(groups) {
     return `
       <div class="table-container mt-2">
@@ -260,11 +314,15 @@ class DashboardView {
             `).join('')}
           </tbody>
         </table>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   renderSessionsGrid(sessions) {
     return `
@@ -296,6 +354,8 @@ class DashboardView {
         <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📭</div>
         <p class="text-muted">${message}</p>
 =======
+=======
+>>>>>>> origin/Juan_Nambo
   renderSessionsList(sessions) {
     return `
       <div class="table-container mt-2">
@@ -319,6 +379,9 @@ class DashboardView {
             `).join('')}
           </tbody>
         </table>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       </div>
     `;
@@ -329,6 +392,9 @@ export default new DashboardView();
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo

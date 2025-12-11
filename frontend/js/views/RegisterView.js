@@ -12,6 +12,7 @@ class RegisterView {
     const container = document.getElementById('view-container');
     container.innerHTML = `
 <<<<<<< HEAD
+<<<<<<< HEAD
       <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
         <div class="card" style="width: 100%; max-width: 600px;">
           <div class="card__header text-center" style="border-bottom: none; padding-bottom: 0;">
@@ -77,6 +78,8 @@ class RegisterView {
             </div>
           </div>
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       <div class="card" style="max-width: 400px; margin: 2rem auto;">
         <div class="card__header">
           <h2 class="card__title">Registro</h2>
@@ -114,6 +117,9 @@ class RegisterView {
           <p class="text-center mt-2">
             ¿Ya tienes cuenta? <a href="#/login">Inicia sesión aquí</a>
           </p>
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
         </div>
       </div>
@@ -123,7 +129,11 @@ class RegisterView {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> origin/Juan_Nambo
 =======
       
 >>>>>>> origin/Juan_Nambo
@@ -133,9 +143,13 @@ class RegisterView {
         nombre: document.getElementById('reg-nombre').value,
         role: document.getElementById('reg-role').value,
 <<<<<<< HEAD
+<<<<<<< HEAD
         grado: document.getElementById('reg-grado').value || null,
         telefono: document.getElementById('reg-telefono').value || null,
         carrera: document.getElementById('reg-carrera').value || null
+=======
+        grado: document.getElementById('reg-grado').value || null
+>>>>>>> origin/Juan_Nambo
 =======
         grado: document.getElementById('reg-grado').value || null
 >>>>>>> origin/Juan_Nambo
@@ -157,7 +171,11 @@ class RegisterView {
         Loading.show();
         const response = await authAPI.register(data);
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> origin/Juan_Nambo
 =======
         
 >>>>>>> origin/Juan_Nambo
@@ -181,6 +199,9 @@ export default new RegisterView();
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo

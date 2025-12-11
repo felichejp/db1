@@ -3,6 +3,10 @@ import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { emitToGroup, emitToUser } from '../config/socket';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { createAndEmitNotificationsForUsers } from '../utils/notifications';
+>>>>>>> origin/Juan_Nambo
 =======
 import { createAndEmitNotificationsForUsers } from '../utils/notifications';
 >>>>>>> origin/Juan_Nambo
@@ -17,6 +21,7 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
     let result;
     if (req.user.role === 'Admin') {
 <<<<<<< HEAD
+<<<<<<< HEAD
       result = await query(`
         SELECT s.*, u.nombre as "nombreTutor" 
         FROM sessions s
@@ -27,10 +32,14 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 =======
       result = await query('SELECT * FROM sessions ORDER BY fecha DESC, "horaInicio" DESC');
 >>>>>>> origin/Juan_Nambo
+=======
+      result = await query('SELECT * FROM sessions ORDER BY fecha DESC, "horaInicio" DESC');
+>>>>>>> origin/Juan_Nambo
     } else if (req.user.role === 'Tutor') {
       const tutorResult = await query('SELECT id FROM tutors WHERE "userId" = $1', [req.user.userId]);
       if (tutorResult.rows.length > 0) {
         result = await query(
+<<<<<<< HEAD
 <<<<<<< HEAD
           `SELECT s.*, u.nombre as "nombreTutor"
            FROM sessions s
@@ -38,6 +47,9 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
            LEFT JOIN users u ON t."userId" = u.id
            WHERE s."tutorId" = $1 
            ORDER BY s.fecha DESC, s."horaInicio" DESC`,
+=======
+          'SELECT * FROM sessions WHERE "tutorId" = $1 ORDER BY fecha DESC, "horaInicio" DESC',
+>>>>>>> origin/Juan_Nambo
 =======
           'SELECT * FROM sessions WHERE "tutorId" = $1 ORDER BY fecha DESC, "horaInicio" DESC',
 >>>>>>> origin/Juan_Nambo
@@ -49,11 +61,16 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
     } else {
       result = await query(
 <<<<<<< HEAD
+<<<<<<< HEAD
         `SELECT s.*, u.nombre as "nombreTutor"
          FROM sessions s
          JOIN group_members gm ON s."groupId" = gm."groupId"
          LEFT JOIN tutors t ON s."tutorId" = t.id
          LEFT JOIN users u ON t."userId" = u.id
+=======
+        `SELECT s.* FROM sessions s
+         JOIN group_members gm ON s."groupId" = gm."groupId"
+>>>>>>> origin/Juan_Nambo
 =======
         `SELECT s.* FROM sessions s
          JOIN group_members gm ON s."groupId" = gm."groupId"
@@ -74,6 +91,7 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 export async function createSession(req: Request, res: Response): Promise<void> {
   try {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const { groupId, tutorId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
 
     const result = await query(
@@ -90,6 +108,8 @@ export async function createSession(req: Request, res: Response): Promise<void> 
 
     sendSuccess(res, result.rows[0], 'Sesión creada exitosamente', 201);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     const { groupId, tutorId, fecha, horaInicio, horaFin, tema } = req.body;
 
     const result = await query(
@@ -142,6 +162,9 @@ export async function createSession(req: Request, res: Response): Promise<void> 
     }
 
     sendSuccess(res, session, 'Sesión creada exitosamente', 201);
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
   } catch (error) {
     console.error('Error en createSession:', error);
@@ -232,7 +255,10 @@ export async function deleteSession(req: Request, res: Response): Promise<void> 
       return;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     
     const deletedSession = result.rows[0];
     
@@ -242,6 +268,9 @@ export async function deleteSession(req: Request, res: Response): Promise<void> 
       emitToUser(deletedSession.tutorId, 'session_cancelled', { sessionId: parseInt(id, 10) });
     }
     
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, null, 'Sesión cancelada');
   } catch (error) {
@@ -313,6 +342,7 @@ export async function getSessionsCalendar(req: Request, res: Response): Promise<
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export async function requestSession(req: Request, res: Response): Promise<void> {
   try {
     const { groupId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
@@ -378,5 +408,7 @@ export async function updateSessionStatus(req: Request, res: Response): Promise<
     sendError(res, 'Error al actualizar estado de la solicitud', 500);
   }
 }
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo

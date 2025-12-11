@@ -3,6 +3,10 @@ import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { emitToGroup, emitToUser } from '../config/socket';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { createAndEmitNotification } from '../utils/notifications';
+>>>>>>> origin/Juan_Nambo
 =======
 import { createAndEmitNotification } from '../utils/notifications';
 >>>>>>> origin/Juan_Nambo
@@ -209,7 +213,10 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
     const { userId } = req.body;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Obtener información del grupo
     const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
     if (groupResult.rows.length === 0) {
@@ -218,6 +225,9 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
     }
     const groupName = groupResult.rows[0].nombre;
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     // Verificar que el grupo no tenga más de 5 miembros
     const countResult = await query(
@@ -243,8 +253,11 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     emitToUser(userId, 'group_invitation', { groupId: id, accepted: true });
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Emitir eventos
     emitToUser(userId, 'group_invitation', { groupId: parseInt(id, 10), accepted: true });
     emitToGroup(parseInt(id, 10), 'member_added', { 
@@ -262,6 +275,9 @@ export async function addGroupMember(req: Request, res: Response): Promise<void>
       relacionTipo: 'group'
     });
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, result.rows[0], 'Miembro agregado exitosamente', 201);
   } catch (error) {
@@ -278,7 +294,10 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
     const { id, userId } = req.params;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Obtener información del grupo antes de eliminar
     const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
     if (groupResult.rows.length === 0) {
@@ -287,6 +306,9 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
     }
     const groupName = groupResult.rows[0].nombre;
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     const result = await query(
       'DELETE FROM group_members WHERE "groupId" = $1 AND "userId" = $2 RETURNING *',
@@ -299,7 +321,10 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Emitir eventos
     emitToGroup(parseInt(id, 10), 'member_removed', {
       groupId: parseInt(id, 10),
@@ -323,6 +348,9 @@ export async function removeGroupMember(req: Request, res: Response): Promise<vo
       relacionTipo: 'group'
     });
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, null, 'Miembro eliminado exitosamente');
   } catch (error) {
@@ -345,7 +373,10 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Obtener información del grupo
     const groupResult = await query('SELECT nombre FROM groups WHERE id = $1', [id]);
     if (groupResult.rows.length === 0) {
@@ -358,6 +389,9 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
     const inviterResult = await query('SELECT nombre FROM users WHERE id = $1', [req.user.userId]);
     const inviterName = inviterResult.rows.length > 0 ? inviterResult.rows[0].nombre : 'Usuario';
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Expira en 7 días
@@ -370,8 +404,11 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     emitToUser(invitedUserId, 'group_invitation', { groupId: id, invitationId: result.rows[0].id });
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Emitir evento por Socket.IO
     emitToUser(invitedUserId, 'group_invitation', { 
       groupId: parseInt(id, 10), 
@@ -388,6 +425,9 @@ export async function sendGroupInvitation(req: Request, res: Response): Promise<
       relacionTipo: 'group'
     });
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, result.rows[0], 'Invitación enviada exitosamente', 201);
   } catch (error) {
@@ -433,13 +473,19 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
 
     const invResult = await query(
 <<<<<<< HEAD
+<<<<<<< HEAD
       'SELECT * FROM group_invitations WHERE id = $1 AND "invitedUserId" = $2',
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       `SELECT gi.*, g.nombre as "groupName", u.nombre as "inviterName"
        FROM group_invitations gi
        JOIN groups g ON gi."groupId" = g.id
        JOIN users u ON gi."inviterId" = u.id
        WHERE gi.id = $1 AND gi."invitedUserId" = $2`,
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
       [invitationId, req.user.userId]
     );
@@ -474,7 +520,10 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
       ['aceptada', invitationId]
     );
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 
     // Notificar al invitador
     await createAndEmitNotification({
@@ -485,6 +534,9 @@ export async function acceptInvitation(req: Request, res: Response): Promise<voi
       relacionId: invitation.groupId,
       relacionTipo: 'group'
     });
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
   } catch (error) {
     console.error('Error en acceptInvitation:', error);

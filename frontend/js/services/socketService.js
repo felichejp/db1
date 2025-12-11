@@ -8,6 +8,11 @@ class SocketService {
     this.socket = null;
     this.listeners = new Map();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    this.connectionState = 'disconnected';
+    this.connectionCallbacks = [];
+>>>>>>> origin/Juan_Nambo
 =======
     this.connectionState = 'disconnected';
     this.connectionCallbacks = [];
@@ -42,11 +47,14 @@ class SocketService {
     this.socket.on('connect', () => {
       console.log('Socket.IO conectado');
 <<<<<<< HEAD
+<<<<<<< HEAD
     });
 
     this.socket.on('disconnect', () => {
       console.log('Socket.IO desconectado');
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       this.connectionState = 'connected';
       this.notifyConnectionChange('connected');
     });
@@ -62,13 +70,19 @@ class SocketService {
         return;
       }
       // Otras desconexiones pueden reconectar automáticamente
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     });
 
     this.socket.on('connect_error', (error) => {
       console.error('Error conectando Socket.IO:', error);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       this.connectionState = 'error';
       this.notifyConnectionChange('error');
     });
@@ -88,6 +102,9 @@ class SocketService {
 
     this.socket.on('left_group', (data) => {
       console.log('Salido del grupo:', data.groupId);
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     });
 
@@ -153,7 +170,10 @@ class SocketService {
     this.emit('leave_group', groupId);
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
 
   /**
    * Obtiene el estado de la conexión
@@ -190,6 +210,9 @@ class SocketService {
       }
     });
   }
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
 }
 

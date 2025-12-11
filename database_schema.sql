@@ -40,8 +40,11 @@ CREATE TABLE users (
     role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante')),
     grado INTEGER,
 <<<<<<< HEAD
+<<<<<<< HEAD
     telefono VARCHAR(20),
     carrera VARCHAR(100),
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -137,8 +140,11 @@ CREATE TABLE sessions (
     tema VARCHAR(255),
     notas TEXT,
 <<<<<<< HEAD
+<<<<<<< HEAD
     materia VARCHAR(100),
     cupo INTEGER,
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { createAndEmitNotification } from '../utils/notifications';
+>>>>>>> origin/Juan_Nambo
 =======
 import { createAndEmitNotification } from '../utils/notifications';
 >>>>>>> origin/Juan_Nambo
@@ -68,7 +72,10 @@ export async function createEvaluation(req: Request, res: Response): Promise<voi
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     // Obtener información del tutor para notificarle
     const tutorResult = await query('SELECT "userId" FROM tutors WHERE id = $1', [tutorId]);
     if (tutorResult.rows.length > 0) {
@@ -88,6 +95,9 @@ export async function createEvaluation(req: Request, res: Response): Promise<voi
       });
     }
 
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     sendSuccess(res, result.rows[0], 'Evaluación creada', 201);
   } catch (error) {

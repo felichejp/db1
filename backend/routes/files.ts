@@ -2,7 +2,11 @@ import { Router } from 'express';
 import * as fileController from '../controllers/fileController';
 import { authenticateToken } from '../middleware/auth';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { validateId, validateFile } from '../middleware/validate';
+=======
+import { validateId, validateFile, validateGroupId } from '../middleware/validate';
+>>>>>>> origin/Juan_Nambo
 =======
 import { validateId, validateFile, validateGroupId } from '../middleware/validate';
 >>>>>>> origin/Juan_Nambo
@@ -11,7 +15,11 @@ import { validateFile as validateFileMiddleware } from '../middleware/upload';
 const router = Router();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 router.get('/group/:groupId', authenticateToken, validateId, fileController.getGroupFiles);
+=======
+router.get('/group/:groupId', authenticateToken, validateGroupId, fileController.getGroupFiles);
+>>>>>>> origin/Juan_Nambo
 =======
 router.get('/group/:groupId', authenticateToken, validateGroupId, fileController.getGroupFiles);
 >>>>>>> origin/Juan_Nambo

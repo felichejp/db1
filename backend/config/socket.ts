@@ -4,6 +4,10 @@ import { verifyToken } from '../utils/jwt';
 import { JwtPayload } from '../types/global';
 import logger from '../utils/logger';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { query } from './database';
+>>>>>>> origin/Juan_Nambo
 =======
 import { query } from './database';
 >>>>>>> origin/Juan_Nambo
@@ -51,10 +55,13 @@ export function initializeSocket(server: HttpServer): Server {
 
     // Evento: Unirse a room de grupo
 <<<<<<< HEAD
+<<<<<<< HEAD
     socket.on('join_group', (groupId: number) => {
       socket.join(`group_${groupId}`);
       logger.debug(`Usuario ${user.userId} se unió al grupo ${groupId}`);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
     socket.on('join_group', async (groupId: number) => {
       try {
         // Validar que groupId sea un número válido
@@ -158,11 +165,15 @@ export function initializeSocket(server: HttpServer): Server {
           message: 'Error al unirse al grupo' 
         });
       }
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     });
 
     // Evento: Salir de room de grupo
     socket.on('leave_group', (groupId: number) => {
+<<<<<<< HEAD
 <<<<<<< HEAD
       socket.leave(`group_${groupId}`);
       logger.debug(`Usuario ${user.userId} salió del grupo ${groupId}`);
@@ -171,6 +182,8 @@ export function initializeSocket(server: HttpServer): Server {
     socket.on('disconnect', () => {
       logger.info(`Usuario desconectado: ${user.email} (${user.userId})`);
 =======
+=======
+>>>>>>> origin/Juan_Nambo
       try {
         if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
           socket.emit('error', { 
@@ -194,6 +207,9 @@ export function initializeSocket(server: HttpServer): Server {
     // Manejo de errores del socket
     socket.on('error', (error) => {
       logger.error('Error en socket', { error, userId: user.userId });
+<<<<<<< HEAD
+>>>>>>> origin/Juan_Nambo
+=======
 >>>>>>> origin/Juan_Nambo
     });
   });

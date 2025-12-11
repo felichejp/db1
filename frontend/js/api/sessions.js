@@ -42,6 +42,7 @@ export const sessionsAPI = {
     });
     return response.data;
 <<<<<<< HEAD
+<<<<<<< HEAD
   },
 
   async request(data) {
@@ -52,6 +53,8 @@ export const sessionsAPI = {
   async updateStatus(id, data) {
     const response = await axios.put(`${API_BASE_URL}/api/sessions/${id}/status`, data);
     return response.data;
+=======
+>>>>>>> origin/Juan_Nambo
 =======
 >>>>>>> origin/Juan_Nambo
   }

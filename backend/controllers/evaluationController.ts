@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
+<<<<<<< HEAD
+=======
+import { createAndEmitNotification } from '../utils/notifications';
+>>>>>>> origin/Juan_Nambo
 
 export async function getEvaluations(req: Request, res: Response): Promise<void> {
   try {
@@ -63,6 +67,28 @@ export async function createEvaluation(req: Request, res: Response): Promise<voi
       [sessionId, req.user.userId, tutorId, rating, comentario || null]
     );
 
+<<<<<<< HEAD
+=======
+    // Obtener información del tutor para notificarle
+    const tutorResult = await query('SELECT "userId" FROM tutors WHERE id = $1', [tutorId]);
+    if (tutorResult.rows.length > 0) {
+      const tutorUserId = tutorResult.rows[0].userId;
+      
+      // Obtener información de la sesión
+      const sessionResult = await query('SELECT tema, fecha FROM sessions WHERE id = $1', [sessionId]);
+      const sessionInfo = sessionResult.rows[0] || {};
+
+      await createAndEmitNotification({
+        userId: tutorUserId,
+        tipo: 'evaluacion_recibida',
+        titulo: 'Nueva evaluación recibida',
+        mensaje: `Has recibido una evaluación de ${rating} estrellas${sessionInfo.tema ? ` para la sesión "${sessionInfo.tema}"` : ''}`,
+        relacionId: result.rows[0].id,
+        relacionTipo: 'evaluation'
+      });
+    }
+
+>>>>>>> origin/Juan_Nambo
     sendSuccess(res, result.rows[0], 'Evaluación creada', 201);
   } catch (error) {
     console.error('Error en createEvaluation:', error);

@@ -28,8 +28,11 @@ export const validateRegister = [
     .isIn(['Admin', 'Profesor', 'Tutor', 'Estudiante'])
     .withMessage('Rol inválido'),
   body('grado').optional().isInt({ min: 1 }).withMessage('Grado inválido'),
+<<<<<<< HEAD
   body('telefono').optional().isString().withMessage('Teléfono inválido'),
   body('carrera').optional().isString().withMessage('Carrera inválida'),
+=======
+>>>>>>> origin/Juan_Nambo
   validate
 ];
 
@@ -51,6 +54,17 @@ export const validateId = [
 ];
 
 /**
+<<<<<<< HEAD
+=======
+ * Validaciones para groupId numérico en parámetros
+ */
+export const validateGroupId = [
+  param('groupId').isInt({ min: 1 }).withMessage('groupId inválido'),
+  validate
+];
+
+/**
+>>>>>>> origin/Juan_Nambo
  * Validaciones para crear grupo
  */
 export const validateCreateGroup = [
@@ -70,8 +84,11 @@ export const validateCreateSession = [
   body('horaFin').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Hora de fin inválida (HH:mm)'),
   body('tutorId').optional().isInt({ min: 1 }),
   body('tema').optional().isString(),
+<<<<<<< HEAD
   body('materia').optional().isString().withMessage('Materia debe ser texto'),
   body('cupo').optional().isInt({ min: 1 }).withMessage('Cupo debe ser mayor a 0'),
+=======
+>>>>>>> origin/Juan_Nambo
   validate
 ];
 

@@ -39,8 +39,11 @@ CREATE TABLE users (
     nombre VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Profesor', 'Tutor', 'Estudiante')),
     grado INTEGER,
+<<<<<<< HEAD
     telefono VARCHAR(20),
     carrera VARCHAR(100),
+=======
+>>>>>>> origin/Juan_Nambo
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -133,8 +136,11 @@ CREATE TABLE sessions (
     estado VARCHAR(20) NOT NULL DEFAULT 'programada' CHECK (estado IN ('programada', 'en_curso', 'completada', 'cancelada')),
     tema VARCHAR(255),
     notas TEXT,
+<<<<<<< HEAD
     materia VARCHAR(100),
     cupo INTEGER,
+=======
+>>>>>>> origin/Juan_Nambo
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CHECK ("horaFin" > "horaInicio")

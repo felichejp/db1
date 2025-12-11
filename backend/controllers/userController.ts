@@ -186,4 +186,7 @@ export async function getUserProfile(
   }
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/Juan_Nambo

@@ -4,6 +4,11 @@ import { sessionsAPI } from '../api/sessions.js';
 import Loading from '../components/Loading.js';
 import Notification from '../components/Notification.js';
 import { formatDate, formatTime, getStatusName, getStatusColor } from '../utils/helpers.js';
+<<<<<<< HEAD
+=======
+import { joinGroupRooms } from '../utils/socketHelpers.js';
+import ChatComponent from '../components/ChatComponent.js';
+>>>>>>> origin/Juan_Nambo
 
 /**
  * Vista de Dashboard
@@ -15,6 +20,7 @@ class DashboardView {
 
     const container = document.getElementById('view-container');
     container.innerHTML = `
+<<<<<<< HEAD
       <div class="dashboard-header mb-3" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h1 class="card__title" style="font-size: 2.5rem;">Hola, ${user.nombre}</h1>
@@ -25,6 +31,18 @@ class DashboardView {
       
       <div id="dashboard-content">
         <div class="spinner" style="margin: 3rem auto;"></div>
+=======
+      <div class="card">
+        <div class="card__header">
+          <h1 class="card__title">Bienvenido, ${user.nombre}</h1>
+          <p class="text-muted">Rol: ${user.role}</p>
+        </div>
+        <div class="card__body">
+          <div id="dashboard-content">
+            <div class="spinner"></div>
+          </div>
+        </div>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
 
@@ -43,13 +61,39 @@ class DashboardView {
     const content = document.getElementById('dashboard-content');
 
     try {
+<<<<<<< HEAD
       const [groupsRes, sessionsRes] = await Promise.all([
+=======
+      const [groupsRes, sessionsRes] = await Promise.allSettled([
+>>>>>>> origin/Juan_Nambo
         groupsAPI.getAll(),
         sessionsAPI.getAll()
       ]);
 
+<<<<<<< HEAD
       const groups = groupsRes.success ? groupsRes.data : [];
       const sessions = sessionsRes.success ? sessionsRes.data : [];
+=======
+      // Manejar resultados (pueden ser errores 401)
+      const groups = groupsRes.status === 'fulfilled' && groupsRes.value.success
+        ? groupsRes.value.data
+        : [];
+      const sessions = sessionsRes.status === 'fulfilled' && sessionsRes.value.success
+        ? sessionsRes.value.data
+        : [];
+
+      // Si hay errores 401, redirigir a login
+      if (groupsRes.status === 'rejected' && groupsRes.reason?.response?.status === 401) {
+        authService.logout();
+        window.location.hash = '#/login';
+        return;
+      }
+
+      // Unirse automáticamente a rooms de grupos para recibir eventos en tiempo real
+      if (groups.length > 0) {
+        await joinGroupRooms(groups);
+      }
+>>>>>>> origin/Juan_Nambo
 
       let html = '';
 
@@ -64,13 +108,26 @@ class DashboardView {
       }
 
       content.innerHTML = html;
+<<<<<<< HEAD
     } catch (error) {
       content.innerHTML = '<p class="text-muted text-center">Error al cargar datos</p>';
+=======
+
+      // Inicializar Chat si existe el contenedor
+      if (document.getElementById('chat-container')) {
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.innerHTML = ChatComponent.render();
+        ChatComponent.attachEvents();
+      }
+    } catch (error) {
+      content.innerHTML = '<p class="text-muted">Error al cargar datos</p>';
+>>>>>>> origin/Juan_Nambo
     }
   }
 
   renderAdminDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
       <div class="dashboard-grid">
         <div class="stat-card">
           <h3 class="text-muted">Grupos Activos</h3>
@@ -80,12 +137,19 @@ class DashboardView {
           <h3 class="text-muted">Sesiones Totales</h3>
           <div class="stat-value">${sessions.length}</div>
         </div>
+=======
+      <div>
+        <h2>Estadísticas</h2>
+        <p>Grupos: ${groups.length}</p>
+        <p>Sesiones: ${sessions.length}</p>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
   renderProfesorDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
       <div class="mb-3">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center;">
           <h2 class="card__title" style="font-size: 1.5rem;">Mis Grupos</h2>
@@ -97,12 +161,21 @@ class DashboardView {
       <div class="mt-3">
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsGrid(sessions.slice(0, 4)) : this.renderEmptyState('No hay sesiones programadas')}
+=======
+      <div>
+        <h2>Mis Grupos (${groups.length})</h2>
+        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No tienes grupos asignados</p>'}
+        <h2 class="mt-3">Próximas Sesiones</h2>
+        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <div id="chat-container"></div>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
   renderTutorDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
       <div class="dashboard-grid mb-3">
         <div class="stat-card">
           <h3 class="text-muted">Mis Sesiones</h3>
@@ -117,12 +190,18 @@ class DashboardView {
       <div>
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsGrid(sessions) : this.renderEmptyState('No tienes sesiones asignadas')}
+=======
+      <div>
+        <h2>Mis Sesiones (${sessions.length})</h2>
+        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No tienes sesiones asignadas</p>'}
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
   renderEstudianteDashboard(groups, sessions) {
     return `
+<<<<<<< HEAD
       <div class="mb-3">
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Mis Grupos</h2>
         ${groups.length > 0 ? this.renderGroupsGrid(groups) : this.renderEmptyState('No estás inscrito en ningún grupo')}
@@ -131,10 +210,19 @@ class DashboardView {
       <div class="mt-3">
         <h2 class="card__title mb-2" style="font-size: 1.5rem;">Próximas Sesiones</h2>
         ${sessions.length > 0 ? this.renderSessionsGrid(sessions.slice(0, 4)) : this.renderEmptyState('No tienes sesiones programadas')}
+=======
+      <div>
+        <h2>Mis Grupos (${groups.length})</h2>
+        ${groups.length > 0 ? this.renderGroupsList(groups) : '<p class="text-muted">No estás en ningún grupo</p>'}
+        <h2 class="mt-3">Próximas Sesiones</h2>
+        ${sessions.length > 0 ? this.renderSessionsList(sessions.slice(0, 5)) : '<p class="text-muted">No hay sesiones programadas</p>'}
+        <div id="chat-container"></div>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
+<<<<<<< HEAD
   renderGroupsGrid(groups) {
     return `
       <div class="dashboard-grid">
@@ -150,10 +238,34 @@ class DashboardView {
             <a href="#/groups/${group.id}" class="btn btn-secondary w-full">Ver Detalles</a>
           </div>
         `).join('')}
+=======
+  renderGroupsList(groups) {
+    return `
+      <div class="table-container mt-2">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${groups.map(group => `
+              <tr>
+                <td>${group.nombre}</td>
+                <td><span class="badge badge--${getStatusColor(group.estado)}">${getStatusName(group.estado)}</span></td>
+                <td><a href="#/groups/${group.id}" class="btn btn-secondary btn-sm">Ver</a></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
 
+<<<<<<< HEAD
   renderSessionsGrid(sessions) {
     return `
       <div class="dashboard-grid">
@@ -183,6 +295,31 @@ class DashboardView {
       <div class="card text-center" style="padding: 3rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📭</div>
         <p class="text-muted">${message}</p>
+=======
+  renderSessionsList(sessions) {
+    return `
+      <div class="table-container mt-2">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Tema</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sessions.map(session => `
+              <tr>
+                <td>${formatDate(session.fecha)}</td>
+                <td>${formatTime(session.horaInicio)} - ${formatTime(session.horaFin)}</td>
+                <td>${session.tema || '-'}</td>
+                <td><span class="badge badge--${getStatusColor(session.estado)}">${getStatusName(session.estado)}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+>>>>>>> origin/Juan_Nambo
       </div>
     `;
   }
@@ -191,4 +328,7 @@ class DashboardView {
 export default new DashboardView();
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/Juan_Nambo

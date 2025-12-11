@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import { query } from '../config/database';
 import { emitToGroup, emitToUser } from '../config/socket';
+<<<<<<< HEAD
+=======
+import { createAndEmitNotificationsForUsers } from '../utils/notifications';
+>>>>>>> origin/Juan_Nambo
 
 export async function getSessions(req: Request, res: Response): Promise<void> {
   try {
@@ -12,6 +16,7 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 
     let result;
     if (req.user.role === 'Admin') {
+<<<<<<< HEAD
       result = await query(`
         SELECT s.*, u.nombre as "nombreTutor" 
         FROM sessions s
@@ -19,16 +24,23 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
         LEFT JOIN users u ON t."userId" = u.id
         ORDER BY s.fecha DESC, s."horaInicio" DESC
       `);
+=======
+      result = await query('SELECT * FROM sessions ORDER BY fecha DESC, "horaInicio" DESC');
+>>>>>>> origin/Juan_Nambo
     } else if (req.user.role === 'Tutor') {
       const tutorResult = await query('SELECT id FROM tutors WHERE "userId" = $1', [req.user.userId]);
       if (tutorResult.rows.length > 0) {
         result = await query(
+<<<<<<< HEAD
           `SELECT s.*, u.nombre as "nombreTutor"
            FROM sessions s
            LEFT JOIN tutors t ON s."tutorId" = t.id
            LEFT JOIN users u ON t."userId" = u.id
            WHERE s."tutorId" = $1 
            ORDER BY s.fecha DESC, s."horaInicio" DESC`,
+=======
+          'SELECT * FROM sessions WHERE "tutorId" = $1 ORDER BY fecha DESC, "horaInicio" DESC',
+>>>>>>> origin/Juan_Nambo
           [tutorResult.rows[0].id]
         );
       } else {
@@ -36,11 +48,16 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
       }
     } else {
       result = await query(
+<<<<<<< HEAD
         `SELECT s.*, u.nombre as "nombreTutor"
          FROM sessions s
          JOIN group_members gm ON s."groupId" = gm."groupId"
          LEFT JOIN tutors t ON s."tutorId" = t.id
          LEFT JOIN users u ON t."userId" = u.id
+=======
+        `SELECT s.* FROM sessions s
+         JOIN group_members gm ON s."groupId" = gm."groupId"
+>>>>>>> origin/Juan_Nambo
          WHERE gm."userId" = $1
          ORDER BY s.fecha DESC, s."horaInicio" DESC`,
         [req.user.userId]
@@ -56,6 +73,7 @@ export async function getSessions(req: Request, res: Response): Promise<void> {
 
 export async function createSession(req: Request, res: Response): Promise<void> {
   try {
+<<<<<<< HEAD
     const { groupId, tutorId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
 
     const result = await query(
@@ -71,6 +89,60 @@ export async function createSession(req: Request, res: Response): Promise<void> 
     }
 
     sendSuccess(res, result.rows[0], 'Sesión creada exitosamente', 201);
+=======
+    const { groupId, tutorId, fecha, horaInicio, horaFin, tema } = req.body;
+
+    const result = await query(
+      `INSERT INTO sessions ("groupId", "tutorId", fecha, "horaInicio", "horaFin", tema)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [groupId, tutorId || null, fecha, horaInicio, horaFin, tema || null]
+    );
+
+    const session = result.rows[0];
+
+    // Emitir eventos por Socket.IO
+    emitToGroup(groupId, 'session_updated', session);
+    if (tutorId) {
+      emitToUser(tutorId, 'session_reminder', session);
+    }
+
+    // Obtener miembros del grupo para notificarles
+    const membersResult = await query(
+      `SELECT "userId" FROM group_members WHERE "groupId" = $1`,
+      [groupId]
+    );
+    const memberIds = membersResult.rows.map(row => row.userId);
+
+    // Crear notificaciones para todos los miembros del grupo
+    if (memberIds.length > 0) {
+      await createAndEmitNotificationsForUsers(
+        memberIds,
+        'sesion_programada',
+        'Nueva sesión programada',
+        `Sesión programada para ${fecha} a las ${horaInicio}${tema ? ` - ${tema}` : ''}`,
+        session.id,
+        'session'
+      );
+    }
+
+    // Notificar al tutor si existe
+    if (tutorId) {
+      const tutorUserResult = await query('SELECT "userId" FROM tutors WHERE id = $1', [tutorId]);
+      if (tutorUserResult.rows.length > 0) {
+        await createAndEmitNotificationsForUsers(
+          [tutorUserResult.rows[0].userId],
+          'sesion_asignada',
+          'Sesión asignada',
+          `Has sido asignado a una sesión el ${fecha} a las ${horaInicio}${tema ? ` - ${tema}` : ''}`,
+          session.id,
+          'session'
+        );
+      }
+    }
+
+    sendSuccess(res, session, 'Sesión creada exitosamente', 201);
+>>>>>>> origin/Juan_Nambo
   } catch (error) {
     console.error('Error en createSession:', error);
     sendError(res, 'Error al crear sesión', 500);
@@ -159,6 +231,18 @@ export async function deleteSession(req: Request, res: Response): Promise<void> 
       sendError(res, 'Sesión no encontrada', 404);
       return;
     }
+<<<<<<< HEAD
+=======
+    
+    const deletedSession = result.rows[0];
+    
+    // Emitir evento de eliminación al grupo y al tutor si existe
+    emitToGroup(deletedSession.groupId, 'session_deleted', { sessionId: parseInt(id, 10) });
+    if (deletedSession.tutorId) {
+      emitToUser(deletedSession.tutorId, 'session_cancelled', { sessionId: parseInt(id, 10) });
+    }
+    
+>>>>>>> origin/Juan_Nambo
     sendSuccess(res, null, 'Sesión cancelada');
   } catch (error) {
     console.error('Error en deleteSession:', error);
@@ -228,6 +312,7 @@ export async function getSessionsCalendar(req: Request, res: Response): Promise<
 }
 
 
+<<<<<<< HEAD
 export async function requestSession(req: Request, res: Response): Promise<void> {
   try {
     const { groupId, fecha, horaInicio, horaFin, tema, materia, cupo } = req.body;
@@ -293,3 +378,5 @@ export async function updateSessionStatus(req: Request, res: Response): Promise<
     sendError(res, 'Error al actualizar estado de la solicitud', 500);
   }
 }
+=======
+>>>>>>> origin/Juan_Nambo

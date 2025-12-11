@@ -11,6 +11,7 @@ class LoginView {
   render() {
     const container = document.getElementById('view-container');
     container.innerHTML = `
+<<<<<<< HEAD
       <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
         <div class="card" style="width: 100%; max-width: 420px;">
           <div class="card__header text-center" style="border-bottom: none; padding-bottom: 0;">
@@ -41,6 +42,27 @@ class LoginView {
               </p>
             </div>
           </div>
+=======
+      <div class="card" style="max-width: 400px; margin: 2rem auto;">
+        <div class="card__header">
+          <h2 class="card__title">Iniciar Sesión</h2>
+        </div>
+        <div class="card__body">
+          <form id="login-form">
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input type="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="password">Contraseña</label>
+              <input type="password" id="password" class="form-input" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Iniciar Sesión</button>
+          </form>
+          <p class="text-center mt-2">
+            ¿No tienes cuenta? <a href="#/register">Regístrate aquí</a>
+          </p>
+>>>>>>> origin/Juan_Nambo
         </div>
       </div>
     `;
@@ -85,4 +107,7 @@ class LoginView {
 export default new LoginView();
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/Juan_Nambo

@@ -1,76 +1,74 @@
-/**
- * Programa Hola Mundo básico en TypeScript orientado a objetos
- * Autor: Feliche
- */
+// index.ts
+import * as dotenv from "dotenv";
+import { resolve } from "path";
+import { Pool } from "pg";
+import * as readline from "readline";
 
-// Clase principal que representa el saludo
-class ClaseSaludo {
-    private mensaje: string;
-    private autor: string;
+// Cargar variables de entorno desde el .env en la raíz
+dotenv.config({ path: resolve(__dirname, "../.env") });
 
-    constructor(mensaje: string = "Hola Mundo !!!", autor: string = "TypeScript") {
-        this.mensaje = mensaje;
-        this.autor = autor;
-    }
+console.log("ENV PGHOST =", process.env.PGHOST || "(no definido)");
 
-    // Método para obtener el mensaje
-    public getMensaje(): string {
-        return this.mensaje;
-    }
+// Crear interfaz para capturar datos desde consola
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-    // Método para obtener el autor
-    public getAutor(): string {
-        return this.autor;
-    }
+async function main() {
+  // Configuración del pool (conexión a la base de datos)
+  const pool = new Pool({
+    host: process.env.PGHOST,
+    port: Number(process.env.PGPORT || 5432),
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    database: process.env.PGDATABASE,
+    ssl:
+      process.env.PGSSLMODE === "require"
+        ? { rejectUnauthorized: false }
+        : undefined,
+  });
 
-    // Método para establecer un nuevo mensaje
-    public setMensaje(mensaje: string): void {
-        this.mensaje = mensaje;
-    }
+  console.log("\nConectando a PostgreSQL…");
 
-    // Método para mostrar el saludo completo
-    public mostrarSaludo(): void {
-        console.log(`${this.mensaje} - Creado con ${this.autor}`);
-    }
+  try {
+    const client = await pool.connect();
+    console.log("✅ Conectado correctamente como:", process.env.PGUSER);
 
-    // Método para mostrar información detallada
-    public mostrarInfo(): void {
-        console.log("=================================");
-        console.log("    PROGRAMA HOLA MUNDO TS");
-        console.log("=================================");
-        console.log(`Mensaje: ${this.mensaje}`);
-        console.log(`Tecnología: ${this.autor}`);
-        console.log(`Fecha: ${new Date().toLocaleDateString()}`);
-        console.log("=================================");
-    }
+    // Solicitar datos al usuario
+    rl.question("Introduce el Lead: ", (lead) => {
+      rl.question("Introduce el Password: ", (password) => {
+        rl.question("Introduce el Código: ", async (codigo) => {
+          console.log("\nGuardando datos...");
+
+          try {
+            // Validar el código en la base de datos
+            const sel = await client.query(
+              "SELECT * FROM codigos WHERE codigo = $1",
+              [codigo]
+            );
+
+            console.log(
+              sel.rowCount && sel.rowCount > 0
+                ? "✅ Código válido"
+                : "❌ Código inválido"
+            );
+          } catch (err: any) {
+            if (err.code === "42501") {
+              console.error("⚠️ Permiso denegado: usuario sin privilegios de escritura.");
+            } else {
+              console.error("❌ Error al consultar:", err.message);
+            }
+          } finally {
+            client.release();
+            rl.close();
+          }
+        });
+      });
+    });
+  } catch (error: any) {
+    console.error("Error general:", error.code || error);
+  }
 }
 
-// Clase principal de la aplicación
-class ClaseApp {
-    private saludo: ClaseSaludo;
-
-    constructor() {
-        this.saludo = new ClaseSaludo();
-    }
-
-    // Método principal para ejecutar la aplicación
-    public ejecutar(): void {
-        console.clear();
-        this.saludo.mostrarInfo();
-        this.saludo.mostrarSaludo();
-        
-        // Ejemplo de modificación del mensaje
-        console.log("\n--- Modificando el mensaje ---");
-        this.saludo.setMensaje("¡Hola desde TypeScript orientado a objetos!");
-        this.saludo.mostrarSaludo();
-    }
-}
-
-// Punto de entrada del programa
-function db(): void {
-    const objetoTipoApp = new ClaseApp();
-    objetoTipoApp.ejecutar();
-}
-
-// Ejecutar la aplicación
-db();
+main();
